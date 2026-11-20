@@ -1,0 +1,2209 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <style>
+    * { box-sizing:border-box; }
+
+    body {
+      margin:0;
+      padding:14px;
+      background:#f3f4f6;
+      color:#222;
+      font-family:Arial,sans-serif;
+    }
+
+    .app { max-width:1050px; margin:auto; }
+
+    header {
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      margin:8px 0 20px;
+      text-align:center;
+    }
+
+    h1 { font-size:21px; margin:0; }
+    .subtitle { color:#888; font-size:12px; margin-top:5px; }
+
+    .branches {
+      display:flex;
+      gap:8px;
+      margin-bottom:15px;
+    }
+
+    button {
+      border:0;
+      border-radius:9px;
+      padding:11px 15px;
+      background:#e5e7eb;
+      font-weight:bold;
+      cursor:pointer;
+    }
+
+    button.active { background:#111; color:white; }
+
+    .card {
+      background:white;
+      border-radius:15px;
+      padding:17px;
+      margin-bottom:15px;
+      box-shadow:0 2px 8px #00000008;
+    }
+
+    h2 { font-size:17px; margin:0 0 15px; }
+
+    .stats {
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      gap:10px;
+      margin-bottom:15px;
+    }
+
+    .stat {
+      background:white;
+      border-radius:13px;
+      padding:15px;
+      min-width:0;
+    }
+
+    .stat small {
+      display:block;
+      color:#888;
+      margin-bottom:7px;
+    }
+
+    .stat strong {
+      font-size:17px;
+      overflow-wrap:anywhere;
+    }
+
+    .negative {
+      background:#d92727 !important;
+      color:white;
+    }
+
+    .negative small { color:white; }
+
+    label {
+      display:block;
+      font-size:13px;
+      font-weight:bold;
+      margin:10px 0 6px;
+    }
+
+    input {
+      width:100%;
+      padding:12px;
+      border:1px solid #ddd;
+      border-radius:10px;
+      font-size:16px;
+      background:white;
+    }
+
+    .form-grid {
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:5px 12px;
+    }
+
+    .full { grid-column:1/-1; }
+
+    .save-wrap {
+      display:flex;
+      justify-content:center;
+      margin-top:17px;
+    }
+
+    .primary {
+      width:auto;
+      min-width:145px;
+      padding:12px 22px;
+      background:#111;
+      color:white;
+      font-size:14px;
+      font-weight:800;
+      border-radius:9px;
+    }
+
+    .primary:disabled { opacity:.5; }
+
+    .message { font-size:13px; margin-top:10px; }
+
+    /* GRAFIK */
+
+    .chart-title {
+      text-align:center;
+      font-size:17px;
+      font-weight:bold;
+      margin-bottom:5px;
+    }
+
+    .chart-subtitle {
+      text-align:center;
+      font-size:12px;
+      color:#888;
+      margin-bottom:17px;
+    }
+
+    .chart-area {
+      display:flex;
+      align-items:flex-end;
+      gap:5px;
+      height:190px;
+      padding:10px 4px 0;
+      overflow-x:auto;
+      border-bottom:1px solid #ddd;
+    }
+
+    .chart-column {
+      flex:1;
+      min-width:19px;
+      height:100%;
+      display:flex;
+      flex-direction:column;
+      justify-content:flex-end;
+      align-items:center;
+    }
+
+    .bar-value {
+      font-size:9px;
+      color:#777;
+      margin-bottom:4px;
+      white-space:nowrap;
+    }
+
+    .bar {
+      width:65%;
+      min-height:2px;
+      border-radius:5px 5px 0 0;
+      background:#222;
+    }
+
+    .bar.profit { background:linear-gradient(to top,#d8d8d8 0%,#777 58%,#292929 100%); }
+    .bar.negative-bar { background:linear-gradient(to top,#eeeeee 0%,#a8a8a8 100%); }
+    .bar:not(.profit):not(.negative-bar) {
+      background:linear-gradient(to top,#d8d8d8 0%,#777 58%,#292929 100%);
+    }
+
+    .chart-day {
+      font-size:10px;
+      color:#777;
+      margin-top:6px;
+    }
+
+    .chart-buttons {
+      display:flex;
+      justify-content:center;
+      gap:9px;
+      margin-top:17px;
+    }
+
+    .chart-buttons button {
+      min-width:110px;
+      background:#eee;
+    }
+
+    .chart-buttons button.active {
+      background:#111;
+      color:white;
+    }
+
+
+    .month-nav{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin:12px 0 18px}
+    .month-nav button{padding:9px 13px;border:1px solid #e1e1e8;background:#fff;color:#2878ed;border-radius:11px;font-size:13px;font-weight:700;min-width:48px}
+    .month-nav button.active{background:#111;color:#fff;border-color:#111}
+    .month-nav .year-select{margin-left:auto;width:auto;min-width:86px;padding:8px 10px;border:1px solid #ddd;border-radius:10px;background:#fff}
+    .calendar-wrap{margin-bottom:14px}
+    .calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+    .calendar-weekday{text-align:center;color:#888;font-size:11px;font-weight:700;padding:5px 0}
+    .calendar-day{min-width:0;min-height:48px;padding:6px 2px;border:1px solid #e5e5ed;border-radius:10px;background:#fff;color:#333;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+    .calendar-day .day-num{font-size:14px;font-weight:800}
+    .calendar-day .day-dot{width:5px;height:5px;border-radius:50%;background:#269653}
+    .calendar-day.has-data{border-color:#cfdcf8;color:#2878ed}
+    .calendar-day.active{background:#111;color:#fff;border-color:#111}
+    .calendar-day.active .day-dot{background:#fff}
+    .calendar-day.empty{visibility:hidden}
+    .history-card{display:none}
+    .history-card.selected{display:block}
+    .import-launch-wrap{text-align:center;margin:22px 0 8px}
+    .import-launch{background:#fff!important;color:#111!important;border:1px solid #222!important;border-radius:24px!important;padding:10px 22px!important;font-weight:800;box-shadow:0 2px 6px #00000012}
+    .import-panel{display:none;margin-top:12px}
+    .import-panel.open{display:block}
+    @media(max-width:600px){.calendar-day{min-height:42px}.calendar-day .day-num{font-size:13px}.month-nav{gap:5px}.month-nav button{padding:8px 9px;min-width:42px;font-size:12px}}
+
+    /* RIWAYAT BARU */
+
+    .history-summary {
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:9px;
+      margin-bottom:17px;
+      padding:13px;
+      background:#f1f0ff;
+      border-radius:13px;
+    }
+
+    .summary-item {
+      min-width:0;
+      padding:3px 7px;
+      border-right:1px solid #d8d5f0;
+    }
+
+    .summary-item:last-child { border-right:0; }
+
+    .summary-item small {
+      display:block;
+      color:#777;
+      font-size:11px;
+      margin-bottom:6px;
+    }
+
+    .summary-item strong {
+      font-size:14px;
+      overflow-wrap:anywhere;
+    }
+
+    .summary-item.profit-summary strong {
+      color:#16803c;
+    }
+
+    .history-list {
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+
+    .history-card {
+      border:1px solid #e3e3eb;
+      border-radius:13px;
+      overflow:hidden;
+      background:white;
+    }
+
+    .history-toggle {
+      width:100%;
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto auto;
+      align-items:center;
+      gap:12px;
+      padding:15px;
+      background:white;
+      text-align:left;
+      border-radius:0;
+    }
+
+    .history-toggle:hover { background:#fafaff; }
+
+    .history-date {
+      font-size:14px;
+      font-weight:bold;
+      min-width:0;
+    }
+
+    .history-date small {
+      color:#888;
+      font-weight:normal;
+      font-size:11px;
+    }
+
+    .history-omzet {
+      font-size:13px;
+      white-space:nowrap;
+    }
+
+    .history-profit {
+      background:#e4f8eb;
+      color:#16803c;
+      border-radius:9px;
+      padding:8px 10px;
+      font-size:12px;
+      white-space:nowrap;
+    }
+
+    .history-profit.negative-profit {
+      background:#fee2e2;
+      color:#b91c1c;
+    }
+
+    .history-arrow {
+      font-size:16px;
+      color:#555;
+      transition:transform .2s;
+    }
+
+    .history-card.open .history-arrow {
+      transform:rotate(180deg);
+    }
+
+    .history-detail {
+      display:none;
+      padding:0 13px 14px;
+    }
+
+    .history-card.open .history-detail {
+      display:block;
+    }
+
+    .detail-grid {
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;
+    }
+
+    .detail-panel {
+      border:1px solid #e8e8ef;
+      border-radius:11px;
+      padding:12px;
+      min-width:0;
+    }
+
+    .detail-title {
+      font-size:13px;
+      font-weight:bold;
+      margin-bottom:11px;
+    }
+
+    .detail-line {
+      display:flex;
+      justify-content:space-between;
+      gap:8px;
+      padding:8px 0;
+      border-bottom:1px solid #eee;
+      font-size:12px;
+    }
+
+    .detail-line:last-child { border-bottom:0; }
+
+    .detail-line span:first-child {
+      color:#666;
+    }
+
+    .detail-line strong {
+      text-align:right;
+      overflow-wrap:anywhere;
+    }
+
+    .net-line {
+      margin-top:5px;
+      padding:10px;
+      border-radius:9px;
+      background:#e4f8eb;
+      color:#16803c;
+      font-weight:bold;
+    }
+
+    .net-line.negative-net {
+      background:#fee2e2;
+      color:#b91c1c;
+    }
+
+    .transaction-list {
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+
+    .transaction-item {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+      padding:9px;
+      border:1px solid #eee;
+      border-radius:9px;
+    }
+
+    .transaction-number {
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-size:12px;
+      min-width:0;
+    }
+
+    .transaction-badge {
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      width:28px;
+      height:28px;
+      flex-shrink:0;
+      border-radius:50%;
+      background:#f0edff;
+      color:#5140a0;
+      font-weight:bold;
+    }
+
+    .transaction-item strong {
+      font-size:13px;
+      overflow-wrap:anywhere;
+    }
+
+    .delete-btn {
+      background:#fee2e2;
+      color:#b91c1c;
+      padding:8px 10px;
+      font-size:12px;
+      flex-shrink:0;
+    }
+
+    .history-actions {
+      display:flex;
+      gap:9px;
+      margin-top:12px;
+    }
+
+    .history-actions button {
+      flex:1;
+      font-size:12px;
+      padding:11px 8px;
+    }
+
+    .edit-btn {
+      background:#e8e5ff;
+      color:#4534a0;
+    }
+
+    .empty-history {
+      color:#888;
+      font-size:13px;
+      padding:15px 0;
+    }
+
+    /* LAPORAN */
+
+    .table-wrap { overflow-x:auto; }
+
+    table {
+      border-collapse:collapse;
+      width:100%;
+      min-width:700px;
+      font-size:12px;
+    }
+
+    th,td {
+      border-bottom:1px solid #eee;
+      padding:10px 8px;
+      text-align:right;
+      white-space:nowrap;
+    }
+
+    th { background:#f7f7f7; }
+
+    th:first-child,td:first-child {
+      text-align:left;
+    }
+
+    /* POP-UP EDIT */
+
+    .modal {
+      display:none;
+      position:fixed;
+      inset:0;
+      z-index:1000;
+      background:#0008;
+      padding:18px;
+      align-items:center;
+      justify-content:center;
+    }
+
+    .modal.show { display:flex; }
+
+    .modal-box {
+      width:100%;
+      max-width:430px;
+      max-height:90vh;
+      overflow-y:auto;
+      background:white;
+      border-radius:17px;
+      padding:20px;
+      box-shadow:0 10px 40px #0003;
+    }
+
+    .modal-box h2 { margin-bottom:5px; }
+
+    .modal-date {
+      font-size:12px;
+      color:#888;
+      margin-bottom:13px;
+    }
+
+    .modal-grid {
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:8px 12px;
+    }
+
+    .modal-actions {
+      display:flex;
+      justify-content:flex-end;
+      gap:8px;
+      margin-top:18px;
+    }
+
+    .cancel-btn { background:#eee; }
+
+    .save-edit-btn {
+      background:#111;
+      color:white;
+    }
+
+    .muted { color:#888; }
+
+
+    /* INFO POPOVER DASHBOARD */
+    .stat {
+      position:relative;
+      cursor:pointer;
+      -webkit-user-select:none;
+      user-select:none;
+      touch-action:pan-y;
+    }
+
+    .stat-info-popover {
+      position:fixed;
+      z-index:2000;
+      display:none;
+      width:min(420px, calc(100vw - 28px));
+      padding:14px;
+      border:1px solid #ececec;
+      border-radius:18px;
+      background:#fff;
+      color:#171717;
+      box-shadow:0 12px 34px #0003;
+      font-size:13px;
+      line-height:1.45;
+      pointer-events:none;
+    }
+
+    .stat-info-popover.show { display:block; }
+
+    .stat-popover-title {
+      padding:12px 14px;
+      margin-bottom:9px;
+      border-radius:12px;
+      background:#f1f1f1;
+      font-size:16px;
+      font-weight:800;
+    }
+
+    .stat-popover-table-head,
+    .stat-popover-row,
+    .stat-popover-total {
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto;
+      align-items:center;
+      gap:10px;
+      padding:9px 10px;
+    }
+
+    .stat-popover-table-head {
+      background:#ededed;
+      border-radius:9px 9px 0 0;
+      font-weight:800;
+    }
+
+    .stat-popover-rows {
+      max-height:210px;
+      overflow:hidden;
+      border-bottom:1px solid #e7e7e7;
+    }
+
+    .stat-popover-row {
+      border-bottom:1px solid #ededed;
+      font-size:13px;
+    }
+
+    .stat-popover-row span:last-child,
+    .stat-popover-total strong:last-child {
+      text-align:right;
+      white-space:nowrap;
+    }
+
+    .stat-popover-total {
+      margin-top:8px;
+      border-radius:10px;
+      background:#e9e9e9;
+      font-size:15px;
+      font-weight:800;
+    }
+
+    .stat-popover-empty {
+      padding:14px 10px;
+      color:#777;
+    }
+
+    @media(min-width:650px) {
+      .stats { grid-template-columns:repeat(4,1fr); }
+    }
+
+    @media(max-width:600px) {
+      .history-toggle {
+        grid-template-columns:minmax(0,1fr) auto;
+        gap:7px;
+      }
+
+      .history-profit {
+        grid-column:1;
+        grid-row:2;
+        justify-self:start;
+      }
+
+      .history-arrow {
+        grid-column:2;
+        grid-row:1 / span 2;
+      }
+
+      .detail-grid {
+        grid-template-columns:1fr;
+      }
+    }
+
+    @media(max-width:420px) {
+      body { padding:10px; }
+
+      .card { padding:14px; }
+
+      .form-grid { gap:5px 9px; }
+
+      .chart-area { height:165px; }
+
+      .history-summary { padding:9px; gap:4px; }
+
+      .summary-item { padding:3px 4px; }
+
+      .summary-item small { font-size:10px; }
+
+      .summary-item strong { font-size:12px; }
+
+      .history-toggle { padding:12px; }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <header>
+    <div>
+      <h1>J-STORE HIJAB</h1>
+      <div class="subtitle">Laporan Penjualan & Keuangan</div>
+    </div>
+  </header>
+
+  <div class="branches">
+    <button id="btnF" class="active"
+      onclick="changeBranch('Blok F')">Blok F</button>
+
+    <button id="btnB"
+      onclick="changeBranch('Blok B')">Blok B</button>
+  </div>
+
+  <div class="month-nav" id="monthNav">
+    <button data-month="01" onclick="selectMonth('01')">Jan</button>
+    <button data-month="02" onclick="selectMonth('02')">Feb</button>
+    <button data-month="03" onclick="selectMonth('03')">Mar</button>
+    <button data-month="04" onclick="selectMonth('04')">Apr</button>
+    <button data-month="05" onclick="selectMonth('05')">Mei</button>
+    <button data-month="06" onclick="selectMonth('06')">Jun</button>
+    <button data-month="07" onclick="selectMonth('07')">Jul</button>
+    <button data-month="08" onclick="selectMonth('08')">Agu</button>
+    <button data-month="09" onclick="selectMonth('09')">Sep</button>
+    <button data-month="10" onclick="selectMonth('10')">Okt</button>
+    <button data-month="11" onclick="selectMonth('11')">Nov</button>
+    <button data-month="12" onclick="selectMonth('12')">Des</button>
+    <select class="year-select" id="yearSelect" onchange="selectYear(this.value)">
+      <option>2025</option><option selected>2026</option><option>2027</option><option>2028</option>
+    </select>
+  </div>
+
+  <!-- DASHBOARD -->
+
+  <div class="stats">
+
+    <div class="stat" data-stat="omzet" role="button" tabindex="0" aria-label="Info Total Omzet">
+      <small>Total Omzet</small>
+      <strong id="totalOmzet">Rp0</strong>
+    </div>
+
+    <div class="stat" data-stat="profit" role="button" tabindex="0" aria-label="Info Total Profit">
+      <small>Total Profit</small>
+      <strong id="totalProfit">Rp0</strong>
+    </div>
+
+    <div class="stat" data-stat="achievement" role="button" tabindex="0" aria-label="Info Achievement">
+      <small>Achievement</small>
+      <strong id="achievement">0%</strong>
+    </div>
+
+    <div class="stat" id="netCard" data-stat="netProfit" role="button" tabindex="0" aria-label="Info Net Profit">
+      <small>Net Profit</small>
+      <strong id="netProfit">Rp0</strong>
+    </div>
+
+  </div>
+
+  <div id="statInfoPopover" class="stat-info-popover" role="status" aria-live="polite"></div>
+
+  <!-- GRAFIK -->
+
+  <section class="card">
+
+    <div class="chart-title">Grafik Penjualan Harian</div>
+
+    <div class="chart-subtitle" id="chartSubtitle">
+      Perbandingan harian
+    </div>
+
+    <div id="chartArea" class="chart-area"></div>
+
+    <div class="chart-buttons">
+
+      <button id="btnChartOmzet" class="active"
+        onclick="setChart('omzet')">
+        💰 Omzet
+      </button>
+
+      <button id="btnChartProfit"
+        onclick="setChart('netProfit')">
+        📈 Net Profit
+      </button>
+
+    </div>
+
+  </section>
+
+  <!-- INPUT PENJUALAN -->
+
+  <section class="card">
+
+    <h2>Input Penjualan Harian</h2>
+
+    <div class="form-grid">
+
+      <div class="full">
+        <label>Tanggal</label>
+        <input type="date" id="dateInput">
+      </div>
+
+      <div>
+        <label>Omzet / Pemasukan (Rp)</label>
+        <input type="text" id="amountInput"
+          inputmode="numeric" placeholder="0">
+      </div>
+
+      <div>
+        <label>Diskon (Rp)</label>
+        <input type="text" id="discountInput"
+          inputmode="numeric" value="0">
+      </div>
+
+      <div>
+        <label>Bonus (Rp)</label>
+        <input type="text" id="bonusInput"
+          inputmode="numeric" value="0">
+      </div>
+
+      <div>
+        <label>Pengeluaran (Rp)</label>
+        <input type="text" id="expenseInput"
+          inputmode="numeric" value="0">
+      </div>
+
+    </div>
+
+    <div class="save-wrap">
+      <button class="primary" id="saveButton"
+        onclick="saveAll()">SIMPAN</button>
+    </div>
+
+    <div id="formMessage" class="message"></div>
+
+  </section>
+
+  <!-- RIWAYAT PEMASUKAN BARU -->
+
+  <section class="card">
+
+    <h2>📋 Riwayat Pemasukan</h2>
+
+    <div class="history-summary">
+
+      <div class="summary-item">
+        <small>Total Transaksi</small>
+        <strong id="historyDays">0 Hari</strong>
+      </div>
+
+      <div class="summary-item">
+        <small>Total Omzet</small>
+        <strong id="historyOmzet">Rp0</strong>
+      </div>
+
+      <div class="summary-item profit-summary">
+        <small>Total Net Profit</small>
+        <strong id="historyProfit">Rp0</strong>
+      </div>
+
+    </div>
+
+    <div id="historyCalendar" class="calendar-wrap"></div>
+
+    <div id="history" class="history-list">
+      <div class="muted">Memuat data...</div>
+    </div>
+
+  </section>
+
+  <!-- LAPORAN BULANAN -->
+
+  <section class="card">
+
+    <h2>Laporan Penjualan Bulanan</h2>
+
+    <label>Pilih Bulan</label>
+
+    <input type="month" id="monthInput" onchange="loadReport()" style="display:none">
+
+    <div class="table-wrap" style="margin-top:14px">
+
+      <table>
+
+        <thead>
+          <tr>
+            <th>Tanggal</th>
+            <th>Omzet</th>
+            <th>Profit</th>
+            <th>Diskon</th>
+            <th>Achievement</th>
+            <th>Total Profit</th>
+            <th>Modal</th>
+            <th>Pengeluaran</th>
+            <th>Bonus</th>
+            <th>Net Profit</th>
+          </tr>
+        </thead>
+
+        <tbody id="reportBody">
+          <tr>
+            <td colspan="10" class="muted">Memuat laporan...</td>
+          </tr>
+        </tbody>
+
+      </table>
+
+    </div>
+
+  </section>
+
+  <div class="import-launch-wrap">
+    <button class="import-launch" type="button" onclick="toggleImportPanel()">⇧ Import Data Penjualan</button>
+  </div>
+  <section class="card import-panel" id="importPanel">
+    <h2>📥 Import Penjualan Massal</h2>
+    <p class="muted">Pilih file CSV yang sudah disiapkan. Data akan masuk ke cabang yang sedang dipilih.</p>
+    <input type="file" id="importCsvFile" accept=".csv,text/csv">
+    <div class="save-wrap">
+      <button class="primary" id="importButton" onclick="importCsvFile()">IMPORT DATA</button>
+    </div>
+    <div id="importMessage" class="message"></div>
+  </section>
+
+</div>
+
+<!-- MODAL EDIT DATA HARIAN -->
+
+<div class="modal" id="editModal">
+
+  <div class="modal-box">
+
+    <h2>✏️ Edit Data Harian</h2>
+
+    <div class="modal-date" id="modalDate"></div>
+
+    <div class="modal-grid">
+
+      <div>
+        <label>Omzet / Pemasukan</label>
+        <input type="text" id="editOmzet" inputmode="numeric">
+      </div>
+
+      <div>
+        <label>Diskon</label>
+        <input type="text" id="editDiscount" inputmode="numeric">
+      </div>
+
+      <div>
+        <label>Bonus</label>
+        <input type="text" id="editBonus" inputmode="numeric">
+      </div>
+
+      <div>
+        <label>Pengeluaran</label>
+        <input type="text" id="editExpense" inputmode="numeric">
+      </div>
+
+    </div>
+
+    <div class="modal-actions">
+
+      <button class="cancel-btn" onclick="closeEdit()">
+        Batal
+      </button>
+
+      <button class="save-edit-btn"
+        id="editSaveButton" onclick="saveEdit()">
+        Simpan Perubahan
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+
+// =====================================================
+// KONEKSI KE APPS SCRIPT (BACKEND)
+// Ganti API_URL dengan URL Web App hasil Deploy (berakhiran /exec).
+// =====================================================
+const API_URL = 'https://script.google.com/macros/s/AKfycbzwK1ZtcSIS3JUX3_5uyziyziHWqdFtNQfk1Xy0F5ECrzGd-BSVCERH3ycOTpCVrwiD/exec';
+
+function getApiKey() {
+  let key = localStorage.getItem('jstore_api_key');
+  if (!key) {
+    key = (prompt('Masukkan kunci akses aplikasi:') || '').trim();
+    if (key) localStorage.setItem('jstore_api_key', key);
+  }
+  return key;
+}
+
+function callApi(action, args) {
+  return fetch(API_URL, {
+    method: 'POST',
+    // text/plain supaya tidak kena CORS preflight dari Apps Script
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: action, args: args, key: getApiKey() })
+  })
+    .then(res => res.json())
+    .then(res => {
+      if (!res.ok) {
+        if (res.error === 'Kunci akses salah.') {
+          localStorage.removeItem('jstore_api_key');
+        }
+        throw new Error(res.error || 'Terjadi kesalahan server.');
+      }
+      return res.data;
+    });
+}
+
+// Pengganti google.script.run: gaya pemanggilan lama tetap jalan.
+window.google = {
+  script: {
+    get run() {
+      let onOk = () => {};
+      let onFail = err => console.error(err);
+      const runner = new Proxy({}, {
+        get(_, name) {
+          if (name === 'withSuccessHandler') return fn => { onOk = fn; return runner; };
+          if (name === 'withFailureHandler') return fn => { onFail = fn; return runner; };
+          return (...args) => {
+            callApi(name, args)
+              .then(data => onOk(data))
+              .catch(err => onFail(err));
+          };
+        }
+      });
+      return runner;
+    }
+  }
+};
+
+let currentBranch = 'Blok F';
+let reportData = null;
+let chartMode = 'omzet';
+let editingDate = '';
+
+// FORMAT ANGKA
+
+function formatThousands(value) {
+  const digits = String(value ?? '').replace(/\D/g,'');
+
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+}
+
+function parseAmount(value) {
+  const digits = String(value ?? '').replace(/\D/g,'');
+
+  return digits ? Number(digits) : 0;
+}
+
+// INPUT ANGKA OTOMATIS
+// Angka nol awal akan terhapus saat kolom mulai diketik.
+
+function setupNumberInputs() {
+
+  document.querySelectorAll('input[inputmode="numeric"]').forEach(input => {
+
+    input.addEventListener('focus',function() {
+
+      if (parseAmount(this.value) === 0) {
+        this.value = '';
+      }
+
+    });
+
+    input.addEventListener('input',function() {
+
+      this.value = formatThousands(this.value);
+
+    });
+
+    input.addEventListener('blur',function() {
+
+      if (this.id !== 'amountInput' && this.value === '') {
+        this.value = '0';
+      }
+
+    });
+
+  });
+
+}
+
+function rupiah(value) {
+  return 'Rp' + Math.round(Number(value || 0))
+    .toLocaleString('id-ID');
+}
+
+function showMessage(message,error=false) {
+
+  const el = document.getElementById('formMessage');
+
+  el.textContent = message;
+
+  el.style.color = error ? '#d92727' : '#16803c';
+
+}
+
+// CABANG
+
+function changeBranch(branch) {
+
+  currentBranch = branch;
+
+  document.getElementById('btnF')
+    .classList.toggle('active',branch === 'Blok F');
+
+  document.getElementById('btnB')
+    .classList.toggle('active',branch === 'Blok B');
+
+  loadReport();
+
+}
+
+// GRAFIK
+
+function setChart(mode) {
+
+  chartMode = mode;
+
+  document.getElementById('btnChartOmzet')
+    .classList.toggle('active',mode === 'omzet');
+
+  document.getElementById('btnChartProfit')
+    .classList.toggle('active',mode === 'netProfit');
+
+  renderChart();
+
+}
+
+// SIMPAN DATA
+
+function saveAll() {
+
+  const date = document.getElementById('dateInput').value;
+
+  const amount = parseAmount(
+    document.getElementById('amountInput').value
+  );
+
+  const discount = parseAmount(
+    document.getElementById('discountInput').value
+  );
+
+  const bonus = parseAmount(
+    document.getElementById('bonusInput').value
+  );
+
+  const expense = parseAmount(
+    document.getElementById('expenseInput').value
+  );
+
+  if (!date) {
+    showMessage('Pilih tanggal terlebih dahulu.',true);
+    return;
+  }
+
+  if (amount <= 0 && discount === 0 && bonus === 0 && expense === 0) {
+    showMessage('Masukkan nominal terlebih dahulu.',true);
+    return;
+  }
+
+  const button = document.getElementById('saveButton');
+
+  button.disabled = true;
+  button.textContent = 'MENYIMPAN...';
+
+  const finish = () => {
+    button.disabled = false;
+    button.textContent = 'SIMPAN';
+  };
+
+  const saveAdjustment = () => {
+
+    google.script.run
+
+      .withSuccessHandler(() => {
+
+        showMessage('Data berhasil disimpan.');
+
+        // KOSONGKAN SEMUA INPUT NOMINAL SETELAH PENYIMPANAN BERHASIL.
+        // Riwayat transaksi yang sudah tersimpan tetap aman.
+        document.getElementById('amountInput').value = '';
+        document.getElementById('discountInput').value = '0';
+        document.getElementById('bonusInput').value = '0';
+        document.getElementById('expenseInput').value = '0';
+
+        loadReport();
+
+        finish();
+
+      })
+
+      .withFailureHandler(err => {
+
+        showMessage(
+          err.message || 'Gagal menyimpan pengaturan.',
+          true
+        );
+
+        finish();
+
+      })
+
+      .saveDailyAdjustment({
+        branch:currentBranch,
+        date:date,
+        discount:discount,
+        bonus:bonus,
+        expense:expense
+      });
+
+  };
+
+  if (amount > 0) {
+
+    google.script.run
+
+      .withSuccessHandler(saveAdjustment)
+
+      .withFailureHandler(err => {
+
+        showMessage(
+          err.message || 'Gagal menyimpan omzet.',
+          true
+        );
+
+        finish();
+
+      })
+
+      .addIncome({
+        branch:currentBranch,
+        date:date,
+        amount:amount
+      });
+
+  } else {
+
+    saveAdjustment();
+
+  }
+
+}
+
+// NAVIGASI BULAN
+function syncMonthNav(){
+  const value=document.getElementById('monthInput').value;
+  if(!value) return;
+  const parts=value.split('-');
+  document.querySelectorAll('#monthNav button[data-month]').forEach(btn=>
+    btn.classList.toggle('active',btn.dataset.month===parts[1]));
+  document.getElementById('yearSelect').value=parts[0];
+}
+function selectMonth(mm){
+  const year=document.getElementById('yearSelect').value;
+  document.getElementById('monthInput').value=year+'-'+mm;
+  syncMonthNav();
+  loadReport();
+}
+function selectYear(year){
+  const current=document.getElementById('monthInput').value;
+  const mm=current ? current.slice(5,7) : '01';
+  document.getElementById('monthInput').value=year+'-'+mm;
+  syncMonthNav();
+  loadReport();
+}
+function toggleImportPanel(){
+  document.getElementById('importPanel').classList.toggle('open');
+}
+
+// MEMUAT LAPORAN
+
+function loadReport() {
+
+  const month = document.getElementById('monthInput').value;
+
+  if (!month) return;
+
+  // Tampilkan data tersimpan dulu (instan), lalu perbarui dari server.
+  const cacheKey = 'jstore_report_' + currentBranch + '_' + month;
+  try {
+    const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+    if (cached) renderReport(cached);
+  } catch (e) {}
+
+  const requestedBranch = currentBranch;
+  const requestedMonth = month;
+
+  google.script.run
+
+    .withSuccessHandler(data => {
+      try { localStorage.setItem(cacheKey, JSON.stringify(data)); } catch (e) {}
+      // Abaikan jawaban lama kalau pengguna sudah pindah cabang/bulan.
+      if (requestedBranch !== currentBranch ||
+          requestedMonth !== document.getElementById('monthInput').value) return;
+      renderReport(data);
+    })
+
+    .withFailureHandler(err => {
+
+      showMessage(
+        err.message || 'Gagal memuat laporan.',
+        true
+      );
+
+    })
+
+    .getReport(currentBranch,month);
+
+}
+
+// RENDER LAPORAN
+
+function renderReport(data) {
+
+  syncMonthNav();
+
+  reportData = data;
+
+  const totals = data.totals || {};
+  const rows = data.report || [];
+
+  document.getElementById('totalOmzet').textContent =
+    rupiah(totals.omzet);
+
+  document.getElementById('totalProfit').textContent =
+    rupiah(totals.profit);
+
+  document.getElementById('achievement').textContent =
+    Number(totals.achievement || 0).toFixed(1) + '%';
+
+  document.getElementById('netProfit').textContent =
+    rupiah(totals.netProfit);
+
+  document.getElementById('netCard').classList.toggle(
+    'negative',
+    Number(totals.netProfit || 0) < 0
+  );
+
+  const body = document.getElementById('reportBody');
+
+  body.innerHTML = '';
+
+  if (!rows.length) {
+
+    body.innerHTML =
+      '<tr><td colspan="10" class="muted">' +
+      'Belum ada data pada bulan ini.</td></tr>';
+
+  } else {
+
+    rows.forEach(row => {
+
+      const tr = document.createElement('tr');
+
+      if (Number(row.netProfit || 0) < 0) {
+        tr.style.background = '#d92727';
+        tr.style.color = 'white';
+      }
+
+      [
+        row.date,
+        rupiah(row.omzet),
+        rupiah(row.profit),
+        rupiah(row.discount),
+        Number(row.achievement || 0).toFixed(1) + '%',
+        rupiah(row.totalProfit),
+        rupiah(row.modal),
+        rupiah(row.expense),
+        rupiah(row.bonus),
+        rupiah(row.netProfit)
+      ].forEach(value => {
+
+        const td = document.createElement('td');
+
+        td.textContent = value;
+
+        tr.appendChild(td);
+
+      });
+
+      body.appendChild(tr);
+
+    });
+
+  }
+
+  renderHistory(rows);
+  renderChart();
+
+}
+
+// GRAFIK PENJUALAN
+
+function renderChart() {
+
+  const area = document.getElementById('chartArea');
+
+  area.innerHTML = '';
+
+  if (!reportData) return;
+
+  const month = reportData.month;
+
+  const year = Number(month.slice(0,4));
+  const monthNumber = Number(month.slice(5,7));
+
+  const totalDays = new Date(
+    year,
+   monthNumber,
+   0
+  ).getDate();
+
+  const rows = reportData.report || [];
+
+  const lookup = {};
+
+  rows.forEach(row => {
+    lookup[row.day] = row;
+  });
+
+  const values = [];
+
+  for (let day = 1; day <= totalDays; day++) {
+
+    const row = lookup[day];
+
+    values.push(
+      row ? Number(row[chartMode] || 0) : 0
+    );
+
+  }
+
+  const maxValue = Math.max(
+    1,
+    ...values.map(v => Math.abs(v))
+  );
+
+  values.forEach((value,index) => {
+
+    const column = document.createElement('div');
+
+    column.className = 'chart-column';
+
+    const label = document.createElement('div');
+
+    label.className = 'bar-value';
+
+    label.textContent = value !== 0
+      ? (value < 0 ? '-' : '') + shortMoney(Math.abs(value))
+      : '';
+
+    const bar = document.createElement('div');
+
+    bar.className = 'bar';
+
+    if (chartMode === 'netProfit') {
+      bar.classList.add('profit');
+    }
+
+    if (value < 0) {
+      bar.className = 'bar negative-bar';
+    }
+
+    bar.style.height =
+      Math.max(
+        value === 0 ? 0 : 3,
+        Math.abs(value) / maxValue * 125
+      ) + 'px';
+
+    const dayLabel = document.createElement('div');
+
+    dayLabel.className = 'chart-day';
+
+    dayLabel.textContent = index + 1;
+
+    column.appendChild(label);
+    column.appendChild(bar);
+    column.appendChild(dayLabel);
+
+    area.appendChild(column);
+
+  });
+
+  document.getElementById('chartSubtitle').textContent =
+    (chartMode === 'omzet'
+      ? '💰 Omzet harian'
+      : '📈 Net Profit harian'
+    ) + ' • ' + month;
+
+}
+
+function shortMoney(value) {
+
+  if (value >= 1000000) {
+    return (value / 1000000)
+      .toFixed(1)
+      .replace('.0','') + 'jt';
+  }
+
+  if (value >= 1000) {
+    return Math.round(value / 1000) + 'rb';
+  }
+
+  return String(Math.round(value));
+
+}
+
+// FORMAT TANGGAL
+
+function displayDate(date) {
+
+  const parts = date.split('-');
+
+  const d = new Date(
+    Number(parts[0]),
+    Number(parts[1]) - 1,
+    Number(parts[2])
+  );
+
+  const days = [
+    'Min','Sen','Sel','Rab','Kam','Jum','Sab'
+  ];
+
+  const months = [
+    'Jan','Feb','Mar','Apr','Mei','Jun',
+    'Jul','Agu','Sep','Okt','Nov','Des'
+  ];
+
+  return Number(parts[2]) + ' ' +
+    months[d.getMonth()] + ' ' +
+    parts[0] +
+    ' (' + days[d.getDay()] + ')';
+
+}
+
+// RIWAYAT PEMASUKAN BARU
+
+function renderHistory(rows) {
+  const history=document.getElementById('history');
+  history.innerHTML='';
+  const sortedRows=[...rows].sort((a,b)=>b.date.localeCompare(a.date));
+  const totalOmzet=sortedRows.reduce((sum,row)=>sum+Number(row.omzet||0),0);
+  const totalNetProfit=sortedRows.reduce((sum,row)=>sum+Number(row.netProfit||0),0);
+  document.getElementById('historyDays').textContent=sortedRows.length+' Hari';
+  document.getElementById('historyOmzet').textContent=rupiah(totalOmzet);
+  document.getElementById('historyProfit').textContent=rupiah(totalNetProfit);
+  if(!sortedRows.length){
+    document.getElementById('historyCalendar').innerHTML='';
+    history.innerHTML='<div class="empty-history">Belum ada riwayat pada bulan ini.</div>';
+    return;
+  }
+
+  sortedRows.forEach((row,index) => {
+
+    const card = document.createElement('div');
+
+    card.className = 'history-card';
+    card.dataset.date = row.date;
+
+    // Kartu terbaru otomatis terbuka.
+
+    if (index === 0) {
+      card.classList.add('open','selected');
+    }
+
+    // HEADER KARTU
+
+    const toggle = document.createElement('button');
+
+    toggle.className = 'history-toggle';
+
+    const date = document.createElement('div');
+
+    date.className = 'history-date';
+
+    date.textContent = displayDate(row.date);
+
+    const omzet = document.createElement('div');
+
+    omzet.className = 'history-omzet';
+
+    omzet.innerHTML = 'Omzet <strong>' +
+      rupiah(row.omzet) + '</strong>';
+
+    const profit = document.createElement('div');
+
+    profit.className = 'history-profit';
+
+    if (Number(row.netProfit) < 0) {
+      profit.classList.add('negative-profit');
+    }
+
+    profit.textContent =
+      '↗ Net Profit ' + rupiah(row.netProfit);
+
+    const arrow = document.createElement('span');
+
+    arrow.className = 'history-arrow';
+
+    arrow.textContent = '⌄';
+
+    toggle.appendChild(date);
+    toggle.appendChild(omzet);
+    toggle.appendChild(profit);
+    toggle.appendChild(arrow);
+
+    toggle.onclick = () => {
+      card.classList.toggle('open');
+      const dayBtn=document.querySelector('.calendar-day[data-date="'+row.date+'"]');
+      if(dayBtn) dayBtn.classList.add('active');
+    };
+
+    card.appendChild(toggle);
+
+    // DETAIL KARTU
+
+    const detail = document.createElement('div');
+
+    detail.className = 'history-detail';
+
+    const grid = document.createElement('div');
+
+    grid.className = 'detail-grid';
+
+    // PANEL INFORMASI KEUANGAN
+
+    const finance = document.createElement('div');
+
+    finance.className = 'detail-panel';
+
+    const financeTitle = document.createElement('div');
+
+    financeTitle.className = 'detail-title';
+
+    financeTitle.textContent = '💰 Rincian Keuangan';
+
+    finance.appendChild(financeTitle);
+
+    addDetailLine(finance,'Omzet',row.omzet);
+    addDetailLine(finance,'Diskon',row.discount);
+    addDetailLine(finance,'Bonus',row.bonus);
+    addDetailLine(finance,'Pengeluaran',row.expense);
+
+    const netLine = document.createElement('div');
+
+    netLine.className = 'detail-line net-line';
+
+    if (Number(row.netProfit) < 0) {
+      netLine.classList.add('negative-net');
+    }
+
+    const netLabel = document.createElement('span');
+
+    netLabel.textContent = 'Net Profit';
+
+    const netValue = document.createElement('strong');
+
+    netValue.textContent = rupiah(row.netProfit);
+
+    netLine.appendChild(netLabel);
+    netLine.appendChild(netValue);
+
+    finance.appendChild(netLine);
+
+    // PANEL TRANSAKSI
+
+    const transactions = document.createElement('div');
+
+    transactions.className = 'detail-panel';
+
+    const transactionTitle = document.createElement('div');
+
+    transactionTitle.className = 'detail-title';
+
+    transactionTitle.textContent =
+      '📚 Transaksi Pemasukan (' +
+      (row.incomes || []).length + ')';
+
+    transactions.appendChild(transactionTitle);
+
+    const transactionList = document.createElement('div');
+
+    transactionList.className = 'transaction-list';
+
+    if (!row.incomes || !row.incomes.length) {
+
+      const empty = document.createElement('div');
+
+      empty.className = 'muted';
+
+      empty.style.fontSize = '12px';
+
+      empty.textContent =
+        'Tidak ada transaksi pemasukan.';
+
+      transactionList.appendChild(empty);
+
+    } else {
+
+      row.incomes.forEach((item,i) => {
+
+        const itemBox = document.createElement('div');
+
+        itemBox.className = 'transaction-item';
+
+        const left = document.createElement('div');
+
+        left.className = 'transaction-number';
+
+        const badge = document.createElement('span');
+
+        badge.className = 'transaction-badge';
+
+        badge.textContent = i + 1;
+
+        const amount = document.createElement('strong');
+
+        amount.textContent = rupiah(item.amount);
+
+        left.appendChild(badge);
+        left.appendChild(amount);
+
+        const del = document.createElement('button');
+
+        del.className = 'delete-btn';
+
+        del.textContent = '🗑️ Hapus';
+
+        del.onclick = () => deleteTransaction(item.id);
+
+        itemBox.appendChild(left);
+        itemBox.appendChild(del);
+
+        transactionList.appendChild(itemBox);
+
+      });
+
+    }
+
+    transactions.appendChild(transactionList);
+
+    grid.appendChild(finance);
+    grid.appendChild(transactions);
+
+    detail.appendChild(grid);
+
+    // TOMBOL EDIT DATA HARIAN
+
+    const actions = document.createElement('div');
+
+    actions.className = 'history-actions';
+
+    const edit = document.createElement('button');
+
+    edit.className = 'edit-btn';
+
+    edit.textContent = '✏️ Edit Data Harian';
+
+    edit.onclick = () => openEdit(row);
+
+    actions.appendChild(edit);
+
+    detail.appendChild(actions);
+
+    card.appendChild(detail);
+
+    history.appendChild(card);
+
+  });
+
+  // Kalender bulan aktif; tanggal tanpa data tetap terlihat tetapi tidak bisa dibuka.
+  const monthValue=document.getElementById('monthInput').value;
+  const calendar=document.getElementById('historyCalendar');
+  calendar.innerHTML='';
+  if(monthValue){
+    const [yy,mm]=monthValue.split('-').map(Number);
+    const firstDay=new Date(yy,mm-1,1).getDay();
+    const mondayOffset=(firstDay+6)%7;
+    const daysInMonth=new Date(yy,mm,0).getDate();
+    const grid=document.createElement('div'); grid.className='calendar-grid';
+    ['Sen','Sel','Rab','Kam','Jum','Sab','Min'].forEach(label=>{
+      const w=document.createElement('div'); w.className='calendar-weekday'; w.textContent=label; grid.appendChild(w);
+    });
+    for(let i=0;i<mondayOffset;i++){const blank=document.createElement('div');blank.className='calendar-day empty';grid.appendChild(blank);}
+    const rowMap=new Map(sortedRows.map(r=>[r.date,r]));
+    for(let day=1;day<=daysInMonth;day++){
+      const dateKey=yy+'-'+String(mm).padStart(2,'0')+'-'+String(day).padStart(2,'0');
+      const btn=document.createElement('button'); btn.type='button'; btn.className='calendar-day'; btn.dataset.date=dateKey;
+      const num=document.createElement('span'); num.className='day-num'; num.textContent=day; btn.appendChild(num);
+      if(rowMap.has(dateKey)){
+        btn.classList.add('has-data'); const dot=document.createElement('span'); dot.className='day-dot'; btn.appendChild(dot);
+        btn.onclick=()=>{
+          document.querySelectorAll('.calendar-day').forEach(b=>b.classList.remove('active'));
+          btn.classList.add('active');
+          document.querySelectorAll('.history-card').forEach(c=>{c.classList.remove('selected','open');});
+          const selected=document.querySelector('.history-card[data-date="'+dateKey+'"]');
+          if(selected){selected.classList.add('selected','open');}
+        };
+      }else{btn.disabled=true;btn.style.opacity='.35';}
+      grid.appendChild(btn);
+    }
+    calendar.appendChild(grid);
+    if(sortedRows.length){
+      const selectedDate=sortedRows[0].date;
+      const selectedBtn=calendar.querySelector('.calendar-day[data-date="'+selectedDate+'"]');
+      if(selectedBtn) selectedBtn.classList.add('active');
+    }
+  }
+
+}
+
+// MEMBUAT BARIS DETAIL
+
+function addDetailLine(container,label,value) {
+
+  const line = document.createElement('div');
+
+  line.className = 'detail-line';
+
+  const name = document.createElement('span');
+
+  name.textContent = label;
+
+  const amount = document.createElement('strong');
+
+  amount.textContent = rupiah(value);
+
+  line.appendChild(name);
+  line.appendChild(amount);
+
+  container.appendChild(line);
+
+}
+
+// POP-UP EDIT
+
+function openEdit(row) {
+
+  editingDate = row.date;
+
+  document.getElementById('modalDate').textContent =
+    displayDate(row.date);
+
+  document.getElementById('editOmzet').value =
+    formatThousands(row.omzet);
+
+  document.getElementById('editDiscount').value =
+    formatThousands(row.discount);
+
+  document.getElementById('editBonus').value =
+    formatThousands(row.bonus);
+
+  document.getElementById('editExpense').value =
+    formatThousands(row.expense);
+
+  document.getElementById('editModal')
+    .classList.add('show');
+
+}
+
+function closeEdit() {
+
+  document.getElementById('editModal')
+    .classList.remove('show');
+
+}
+
+// SIMPAN PERUBAHAN
+
+function saveEdit() {
+
+  const payload = {
+
+    branch:currentBranch,
+
+    date:editingDate,
+
+    omzet:parseAmount(
+      document.getElementById('editOmzet').value
+    ),
+
+    discount:parseAmount(
+      document.getElementById('editDiscount').value
+    ),
+
+    bonus:parseAmount(
+      document.getElementById('editBonus').value
+    ),
+
+    expense:parseAmount(
+      document.getElementById('editExpense').value
+    )
+
+  };
+
+  const button = document.getElementById('editSaveButton');
+
+  button.disabled = true;
+
+  button.textContent = 'Menyimpan...';
+
+  google.script.run
+
+    .withSuccessHandler(() => {
+
+      button.disabled = false;
+
+      button.textContent = 'Simpan Perubahan';
+
+      closeEdit();
+
+      alert('Data harian berhasil diperbarui.');
+
+      loadReport();
+
+    })
+
+    .withFailureHandler(err => {
+
+      button.disabled = false;
+
+      button.textContent = 'Simpan Perubahan';
+
+      alert(err.message || 'Gagal memperbarui data.');
+
+    })
+
+    .updateDailyRecord(payload);
+
+}
+
+// HAPUS TRANSAKSI INDIVIDUAL
+
+function deleteTransaction(id) {
+
+  if (!confirm(
+    'Yakin ingin menghapus transaksi pemasukan ini?'
+  )) return;
+
+  google.script.run
+
+    .withSuccessHandler(() => {
+
+      alert('Transaksi berhasil dihapus.');
+
+      loadReport();
+
+    })
+
+    .withFailureHandler(err => {
+
+      alert(err.message || 'Gagal menghapus transaksi.');
+
+    })
+
+    .deleteIncome(id);
+
+}
+
+
+// ENTER BERPINDAH KE KOLOM BERIKUTNYA, TIDAK MENYIMPAN FORM
+function setupEnterNavigation() {
+  const fieldIds = [
+    'dateInput',
+    'amountInput',
+    'discountInput',
+    'bonusInput',
+    'expenseInput'
+  ];
+
+  fieldIds.forEach((id,index) => {
+    const field = document.getElementById(id);
+    field.addEventListener('keydown', event => {
+      if (event.key !== 'Enter') return;
+      event.preventDefault();
+
+      const nextId = fieldIds[index + 1] || 'saveButton';
+      const nextField = document.getElementById(nextId);
+      if (nextField) nextField.focus();
+    });
+  });
+}
+
+// INFO DASHBOARD: MUNCUL SAAT KARTU DITEKAN, HILANG SAAT DILEPAS
+function dashboardInfoText(key) {
+  const rows = reportData && reportData.report ? reportData.report : [];
+  const money = value => rupiah(value || 0);
+
+  const config = {
+    omzet: {
+      title: '💰 Rincian Omzet Harian',
+      heading: 'Omzet',
+      field: 'omzet',
+      total: reportData && reportData.totals ? reportData.totals.omzet : 0,
+      format: money
+    },
+    profit: {
+      title: '📈 Rincian Profit Harian',
+      heading: 'Profit',
+      field: 'profit',
+      total: reportData && reportData.totals ? reportData.totals.profit : 0,
+      format: money
+    },
+    achievement: {
+      title: '🎯 Rincian Achievement Harian',
+      heading: 'Achievement',
+      field: 'achievement',
+      total: reportData && reportData.totals ? reportData.totals.achievement : 0,
+      format: value => Number(value || 0).toFixed(1) + '%',
+      totalLabel: 'Rata-rata'
+    },
+    netProfit: {
+      title: '💵 Rincian Net Profit Harian',
+      heading: 'Net Profit',
+      field: 'netProfit',
+      total: reportData && reportData.totals ? reportData.totals.netProfit : 0,
+      format: money
+    }
+  };
+
+  const item = config[key];
+  if (!item) return '';
+
+  const sorted = [...rows].sort((a,b) => a.date.localeCompare(b.date));
+  const rowsHtml = sorted.length
+    ? sorted.map(row =>
+        '<div class="stat-popover-row"><span>' +
+        displayDate(row.date).replace(/ \(.+\)$/, '') +
+        '</span><span>' + item.format(row[item.field]) + '</span></div>'
+      ).join('')
+    : '<div class="stat-popover-empty">Belum ada data pada bulan ini.</div>';
+
+  const totalLabel = item.totalLabel || 'Total';
+  const totalValue = item.format(item.total);
+
+  return '<div class="stat-popover-title">' + item.title + '</div>' +
+    '<div class="stat-popover-table-head"><span>Tanggal</span><span>' +
+    item.heading + '</span></div>' +
+    '<div class="stat-popover-rows">' + rowsHtml + '</div>' +
+    '<div class="stat-popover-total"><span>' + totalLabel +
+    '</span><strong>' + totalValue + '</strong></div>';
+}
+
+function showDashboardPopover(card) {
+  const popover = document.getElementById('statInfoPopover');
+  if (!popover || !card) return;
+
+  popover.innerHTML = dashboardInfoText(card.dataset.stat);
+  const rect = card.getBoundingClientRect();
+  popover.classList.add('show');
+
+  const width = popover.offsetWidth;
+  const height = popover.offsetHeight;
+  const margin = 14;
+  let left = rect.left + rect.width / 2 - width / 2;
+  left = Math.max(margin, Math.min(left, window.innerWidth - width - margin));
+
+  let top = rect.bottom + 12;
+  if (top + height > window.innerHeight - margin) {
+    top = rect.top - height - 12;
+  }
+  top = Math.max(margin, Math.min(top, window.innerHeight - height - margin));
+
+  popover.style.left = left + 'px';
+  popover.style.top = top + 'px';
+}
+
+function hideDashboardPopover() {
+  const popover = document.getElementById('statInfoPopover');
+  if (popover) popover.classList.remove('show');
+}
+
+function setupDashboardPopovers() {
+  document.querySelectorAll('.stat[data-stat]').forEach(card => {
+    card.addEventListener('pointerdown', () => showDashboardPopover(card));
+    ['pointerup','pointercancel','pointerleave','blur'].forEach(eventName => {
+      card.addEventListener(eventName, hideDashboardPopover);
+    });
+    card.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        showDashboardPopover(card);
+      }
+    });
+    card.addEventListener('keyup', event => {
+      if (event.key === 'Enter' || event.key === ' ') hideDashboardPopover();
+    });
+  });
+
+  window.addEventListener('scroll', hideDashboardPopover, true);
+  window.addEventListener('resize', hideDashboardPopover);
+}
+
+
+// IMPORT DATA PENJUALAN DARI FILE CSV
+function importCsvFile() {
+  const input = document.getElementById('importCsvFile');
+  const button = document.getElementById('importButton');
+  const message = document.getElementById('importMessage');
+  const file = input.files && input.files[0];
+
+  if (!file) {
+    message.textContent = 'Pilih file CSV terlebih dahulu.';
+    message.style.color = '#c0392b';
+    return;
+  }
+
+  button.disabled = true;
+  button.textContent = 'MEMBACA FILE...';
+  message.textContent = '';
+
+  const reader = new FileReader();
+
+  reader.onload = function(event) {
+    try {
+      const lines = String(event.target.result || '')
+        .replace(/^\uFEFF/, '')
+        .split(/\r?\n/)
+        .filter(line => line.trim() !== '');
+
+      if (lines.length < 2) throw new Error('File CSV tidak berisi data.');
+
+      const records = [];
+      lines.slice(1).forEach((line, index) => {
+        const cols = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+        if (cols.length < 5) throw new Error('Format baris ' + (index + 2) + ' tidak sesuai.');
+
+        const date = cols[0];
+        const nums = cols.slice(1, 5).map(v => Number(v));
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+            nums.some(n => !Number.isFinite(n) || n < 0)) {
+          throw new Error('Data tanggal/nominal tidak valid pada baris ' + (index + 2) + '.');
+        }
+
+        records.push({
+          date: date,
+          omzet: nums[0],
+          discount: nums[1],
+          bonus: nums[2],
+          expense: nums[3]
+        });
+      });
+
+      button.textContent = 'MENGIMPOR...';
+
+      google.script.run
+        .withSuccessHandler(result => {
+          message.style.color = '#238443';
+          message.textContent =
+            'Selesai. Berhasil import ' + result.imported +
+            ' hari; dilewati ' + result.skipped +
+            ' hari (sudah ada atau tidak valid).';
+          button.disabled = false;
+          button.textContent = 'IMPORT DATA';
+          input.value = '';
+          loadReport();
+        })
+        .withFailureHandler(err => {
+          message.style.color = '#c0392b';
+          message.textContent = err.message || 'Import gagal.';
+          button.disabled = false;
+          button.textContent = 'IMPORT DATA';
+        })
+        .importHistoricalData({
+          branch: currentBranch,
+          records: records
+        });
+
+    } catch (err) {
+      message.style.color = '#c0392b';
+      message.textContent = err.message || 'File CSV tidak bisa dibaca.';
+      button.disabled = false;
+      button.textContent = 'IMPORT DATA';
+    }
+  };
+
+  reader.onerror = function() {
+    message.style.color = '#c0392b';
+    message.textContent = 'Gagal membaca file.';
+    button.disabled = false;
+    button.textContent = 'IMPORT DATA';
+  };
+
+  reader.readAsText(file, 'UTF-8');
+}
+
+// INISIALISASI
+
+function initialize() {
+
+  setupNumberInputs();
+  setupEnterNavigation();
+  setupDashboardPopovers();
+
+  // Tanggal hari ini (WIB) dihitung langsung di HP, tanpa menunggu server.
+  const today = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jakarta',
+    year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(new Date());
+
+  document.getElementById('dateInput').value = today;
+  document.getElementById('monthInput').value = today.slice(0,7);
+  syncMonthNav();
+  loadReport();
+
+}
+
+initialize();
+
+</script>
+
+</body>
+</html>
