@@ -695,6 +695,18 @@
     </div>
   </header>
 
+  <div id="statusBar" style="display:none;background:#fee2e2;color:#b91c1c;border-radius:11px;padding:11px 13px;font-size:13px;margin-bottom:12px"></div>
+
+  <section class="card" id="keyBox" style="display:none">
+    <h2>🔑 Kunci Akses</h2>
+    <label for="keyInput">Masukkan kunci akses aplikasi</label>
+    <input type="password" id="keyInput" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Kunci akses">
+    <div class="save-wrap">
+      <button class="primary" type="button" onclick="saveApiKey()">MASUK</button>
+    </div>
+    <div id="keyMessage" class="message"></div>
+  </section>
+
   <div class="branches">
     <button id="btnF" class="active"
       onclick="changeBranch('Blok F')">Blok F</button>
@@ -912,6 +924,10 @@
     <div id="importMessage" class="message"></div>
   </section>
 
+  <div style="text-align:center;margin:10px 0 24px">
+    <button type="button" onclick="resetApiKey()" style="background:none;color:#555;font-size:12px;font-weight:600;text-decoration:underline">🔑 Ganti kunci akses</button>
+  </div>
+
 </div>
 
 <!-- MODAL EDIT DATA HARIAN -->
@@ -974,26 +990,67 @@
 const API_URL = 'https://script.google.com/macros/s/AKfycbzwK1ZtcSIS3JUX3_5uyziyziHWqdFtNQfk1Xy0F5ECrzGd-BSVCERH3ycOTpCVrwiD/exec';
 
 function getApiKey() {
-  let key = localStorage.getItem('jstore_api_key');
-  if (!key) {
-    key = (prompt('Masukkan kunci akses aplikasi:') || '').trim();
-    if (key) localStorage.setItem('jstore_api_key', key);
-  }
-  return key;
+  try { return localStorage.getItem('jstore_api_key') || ''; } catch (e) { return ''; }
+}
+
+// KOTAK KUNCI AKSES DI HALAMAN (pengganti prompt yang sering diblokir Safari)
+function showKeyBox(message) {
+  document.getElementById('keyBox').style.display = 'block';
+  const msg = document.getElementById('keyMessage');
+  msg.textContent = message || '';
+  msg.style.color = '#d92727';
+}
+
+function saveApiKey() {
+  const key = document.getElementById('keyInput').value.trim();
+  if (!key) { showKeyBox('Kunci belum diisi.'); return; }
+  try { localStorage.setItem('jstore_api_key', key); } catch (e) {}
+  document.getElementById('keyInput').value = '';
+  document.getElementById('keyBox').style.display = 'none';
+  showStatus('');
+  loadReport();
+}
+
+function resetApiKey() {
+  try { localStorage.removeItem('jstore_api_key'); } catch (e) {}
+  showKeyBox('');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// PESAN STATUS DI BAGIAN ATAS
+function showStatus(text) {
+  const el = document.getElementById('statusBar');
+  el.textContent = text;
+  el.style.display = text ? 'block' : 'none';
 }
 
 function callApi(action, args) {
+  const key = getApiKey();
+  if (!key) {
+    showKeyBox('');
+    return Promise.reject(new Error('Masukkan kunci akses dulu.'));
+  }
+
   return fetch(API_URL, {
     method: 'POST',
     // text/plain supaya tidak kena CORS preflight dari Apps Script
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify({ action: action, args: args, key: getApiKey() })
+    body: JSON.stringify({ action: action, args: args, key: key })
   })
-    .then(res => res.json())
-    .then(res => {
+    .catch(() => {
+      throw new Error('Tidak bisa terhubung ke server. Cek internet atau pengaturan Deploy (Who has access: Anyone).');
+    })
+    .then(res => res.text())
+    .then(text => {
+      let res;
+      try { res = JSON.parse(text); }
+      catch (e) {
+        throw new Error('Server tidak membalas JSON. Pastikan Code.gs terbaru sudah di-Deploy sebagai New version.');
+      }
       if (!res.ok) {
         if (res.error === 'Kunci akses salah.') {
-          localStorage.removeItem('jstore_api_key');
+          try { localStorage.removeItem('jstore_api_key'); } catch (e) {}
+          showKeyBox('Kunci akses salah. Coba lagi.');
         }
         throw new Error(res.error || 'Terjadi kesalahan server.');
       }
@@ -1288,15 +1345,15 @@ function loadReport() {
       // Abaikan jawaban lama kalau pengguna sudah pindah cabang/bulan.
       if (requestedBranch !== currentBranch ||
           requestedMonth !== document.getElementById('monthInput').value) return;
+      showStatus('');
       renderReport(data);
     })
 
     .withFailureHandler(err => {
 
-      showMessage(
-        err.message || 'Gagal memuat laporan.',
-        true
-      );
+      const text = err.message || 'Gagal memuat laporan.';
+      showMessage(text, true);
+      if (text !== 'Masukkan kunci akses dulu.') showStatus('⚠️ ' + text);
 
     })
 
@@ -2187,6 +2244,10 @@ function initialize() {
   setupNumberInputs();
   setupEnterNavigation();
   setupDashboardPopovers();
+
+  document.getElementById('keyInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); saveApiKey(); }
+  });
 
   // Tanggal hari ini (WIB) dihitung langsung di HP, tanpa menunggu server.
   const today = new Intl.DateTimeFormat('en-CA', {
