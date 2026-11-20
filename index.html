@@ -989,8 +989,26 @@
 // =====================================================
 const API_URL = 'https://script.google.com/macros/s/AKfycbzwK1ZtcSIS3JUX3_5uyziyziHWqdFtNQfk1Xy0F5ECrzGd-BSVCERH3ycOTpCVrwiD/exec';
 
+// Kunci bisa dibawa lewat link: .../?k=KUNCI
+// Link ini cocok dijadikan bookmark / ikon Home Screen supaya tidak ditanya lagi.
+(function readKeyFromUrl() {
+  try {
+    const params = new URLSearchParams(location.search);
+    const k = (params.get('k') || '').trim();
+    if (k) {
+      localStorage.setItem('jstore_api_key', k);
+      sessionStorage.setItem('jstore_api_key', k);
+    }
+  } catch (e) {}
+})();
+
 function getApiKey() {
-  try { return localStorage.getItem('jstore_api_key') || ''; } catch (e) { return ''; }
+  try {
+    const fromUrl = new URLSearchParams(location.search).get('k');
+    return (fromUrl || '').trim() ||
+      localStorage.getItem('jstore_api_key') ||
+      sessionStorage.getItem('jstore_api_key') || '';
+  } catch (e) { return ''; }
 }
 
 // KOTAK KUNCI AKSES DI HALAMAN (pengganti prompt yang sering diblokir Safari)
