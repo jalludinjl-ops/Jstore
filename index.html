@@ -7,6 +7,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="J-STORE">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=2">
+<link rel="icon" type="image/png" href="apple-touch-icon.png?v=2">
 <meta name="theme-color" content="#f2f2f4">
 <title>J-STORE HIJAB</title>
 <style>
@@ -516,13 +518,13 @@ function renderDash(d){
   const pLbl=mLabel(d.prev.month),lLbl=mLabel(d.ly.month);
 
   // ★ ikut ke achievement: nominal ★ dibagi target hari yang sudah terisi
-  const achD=t.filled||lastDay||1;
-  const ach=t.achievement+(L.omzet&&tg.daily?L.omzet/(tg.daily*achD)*100:0);
+  // achievement = (omzet toko + ★) ÷ target sebulan
+  const ach=tg.monthly?allO/tg.monthly*100:0;
   const left=Math.max(0,tg.monthly-allO);
   const remain=isCur?Math.max(0,c.daysInMonth-todayD+1):(c.month>S.today.slice(0,7)?c.daysInMonth:0);
   const above=c.days.filter(x=>x.has&&x.omzet>=tg.daily).length;
   let rec1;
-  if(left<=0)rec1='Target bulan ini <b>sudah tercapai</b>. Pertahankan!';
+  if(left<=0)rec1='Target bulan ini <b>sudah tercapai</b>'+(allO>tg.monthly?', lebih <b>'+rp(allO-tg.monthly)+'</b>':'')+'. Pertahankan!';
   else if(remain>0)rec1='Kurang <b>'+rp(left)+'</b> lagi. Butuh rata-rata <b>'+rp(left/remain)+'/hari</b> di '+remain+' hari tersisa.';
   else rec1='Bulan ini sudah selesai, kurang <b>'+rp(left)+'</b> dari target.';
 
