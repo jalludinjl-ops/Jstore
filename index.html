@@ -838,6 +838,8 @@ function renderYear(){
     '<div class="hd"><div style="display:flex;align-items:center;gap:6px;font-size:14px"><button class="iconbtn" onclick="yearNav(-1)" aria-label="Tahun sebelumnya">'+ic('left')+'</button><b>Tahun '+y+'</b><button class="iconbtn" onclick="yearNav(1)" aria-label="Tahun berikutnya">'+ic('right')+'</button></div>'+
     '<div style="display:flex;align-items:center;gap:8px"><div class="seg"><button class="'+(mode==='o'?'on':'')+'" onclick="S.yMode=\'o\';renderYear()">Omzet</button><button class="'+(mode==='n'?'on':'')+'" onclick="S.yMode=\'n\';renderYear()">Net profit</button></div>'+
     '<button class="rbtn dark'+(S.yOpen?' open':'')+'" onclick="S.yOpen=!S.yOpen;renderYear()" aria-label="Rincian">'+ic('down')+'</button></div></div>'+
+    (function(){const done=arr.filter(x=>!isFuture(x.month));const tot=done.reduce((s,x)=>s+(mode==='o'?x.omzet:x.net),0);
+      return '<div style="font-size:12px;color:var(--ink2);margin-top:6px">'+(mode==='o'?'Omzet':'Net profit')+' setahun: <b style="color:var(--ink)">'+rp(tot)+'</b>'+(done.length&&done.length<12?' <span class="sub">(Jan–'+MN[done.length-1]+')</span>':'')+'</div>';})()+
     '<div class="ychart" style="margin-top:12px">'+bars+'</div><div class="ml">'+MN.map(m=>'<div>'+m[0]+'</div>').join('')+'</div>'+
     '<div class="sub" style="margin-top:6px">Termasuk pemasukan luar toko ★</div></div>'+table;
 }
