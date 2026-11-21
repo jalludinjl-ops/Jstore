@@ -67,9 +67,23 @@ input,select{font:inherit;color:inherit}
 .rec b{color:var(--ink)}
 .divider{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
 
+/* achievement besar */
+.bigprog{position:relative;height:46px;background:var(--soft);border-radius:23px;overflow:hidden;margin:12px 0 10px}
+.bigprog>div{height:100%;background:var(--ink);border-radius:23px;display:flex;align-items:center;justify-content:flex-end;padding-right:16px;transition:width .4s}
+.bigprog span{font-size:21px;font-weight:800;color:#fff;white-space:nowrap}
+.bigprog span.out{position:absolute;top:50%;transform:translateY(-50%);color:var(--ink)}
+
 /* grafik harian */
-.dchart{position:relative;height:130px;display:flex;align-items:flex-end;gap:2px;border-bottom:1px solid #d5d5da}
-.dchart .b{flex:1;min-width:0;border-radius:3px 3px 0 0;cursor:pointer}
+.dchart{position:relative;display:flex;align-items:flex-end;gap:2px;border-bottom:1px solid #d5d5da}
+.dcol{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;cursor:pointer}
+.dcol .b{width:100%;border-radius:3px 3px 0 0}
+.dcol .lv{font-size:9px;color:var(--ink2);margin-bottom:3px;white-space:nowrap;line-height:1;letter-spacing:-.2px}
+.dchart.vert .lv{writing-mode:vertical-rl;transform:rotate(180deg)}
+.dcol.sel .b{outline:2px solid #8f8f97;outline-offset:1px}
+.imptbl{width:100%;border-collapse:collapse;font-size:12px}
+.imptbl th{font-size:11px;color:var(--ink2);font-weight:600;text-align:right;padding:7px 6px;background:var(--soft)}
+.imptbl td{text-align:right;padding:8px 6px;border-bottom:1px solid var(--line)}
+.imptbl th:first-child,.imptbl td:first-child{text-align:left;padding-left:10px}
 .tline{position:absolute;left:0;right:0;border-top:1px dashed #8f8f97;pointer-events:none}
 .tlbl{position:absolute;right:0;font-size:10px;color:var(--ink2);pointer-events:none;background:rgba(255,255,255,.7);padding:0 2px}
 .xl{display:flex;justify-content:space-between;font-size:10px;color:var(--ink3);margin-top:4px}
@@ -145,8 +159,11 @@ input,select{font:inherit;color:inherit}
 .ml div{flex:1;text-align:center;font-size:10px;color:var(--ink3)}
 .gchart{height:180px;display:flex;align-items:flex-end;gap:2px;border-bottom:1px solid #d5d5da}
 .gg{flex:1;min-width:0;height:100%;display:flex;align-items:flex-end;justify-content:center;gap:1px}
-.gb{width:46%;border-radius:3px 3px 0 0;display:flex;align-items:flex-end;justify-content:center;overflow:hidden}
-.gb span{writing-mode:vertical-rl;transform:rotate(180deg);font-size:9px;line-height:1;padding:4px 0;white-space:nowrap}
+.gbw{width:46%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
+.gbw span{font-size:9px;line-height:1;margin-bottom:3px;white-space:nowrap;letter-spacing:-.2px}
+.gb{width:100%;border-radius:3px 3px 0 0}
+.gscroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.gscroll>div{min-width:700px}
 .yt{width:100%;border-collapse:collapse;font-size:12px}
 .yt th{font-weight:600;font-size:11px;color:var(--ink2);text-align:right;padding:8px 6px;background:var(--soft)}
 .yt th:first-child,.yt td:first-child{text-align:left;padding-left:14px}
@@ -242,7 +259,7 @@ input,select{font:inherit;color:inherit}
   </div>
 </div>
 
-<input type="file" id="csvFile" accept=".csv,text/csv,text/plain" class="hide" onchange="importCsv(this)">
+<input type="file" id="csvFile" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,text/plain" class="hide" onchange="importFile(this)">
 
 <script>
 // =====================================================
@@ -328,6 +345,7 @@ const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 const rp=n=>(n<0?'-':'')+'Rp'+Math.round(Math.abs(n||0)).toLocaleString('id-ID');
 const rpj=n=>{const v=(n||0)/1e6;if(Math.abs(v)<1)return (v<0?'-':'')+'Rp'+Math.round(Math.abs(n||0)/1e3)+'rb';return (v<0?'-':'')+'Rp'+Math.abs(v).toLocaleString('id-ID',{maximumFractionDigits:Math.abs(v)>=10?1:2})+'jt';};
 const short=n=>{const a=Math.abs(n||0),s=n<0?'-':'';if(a>=1e6)return s+(a/1e6).toLocaleString('id-ID',{maximumFractionDigits:1})+'jt';if(a>=1e3)return s+Math.round(a/1e3)+'rb';return s+Math.round(a);};
+const lblJ=n=>{const a=Math.abs(n||0),s=n<0?'-':'';if(a>=1e6)return s+(a/1e6).toLocaleString('id-ID',{maximumFractionDigits:1})+'jt';return s+Math.round(a/1e3)+'rb';};
 const pctTxt=v=>Number(v||0).toFixed(1).replace('.',',')+'%';
 const parseAmount=v=>{const d=String(v==null?'':v).replace(/\D/g,'');return d?Number(d):0;};
 const fmtIn=n=>n?Number(n).toLocaleString('id-ID'):'';
@@ -450,16 +468,15 @@ function renderDash(d){
   const mode=S.dashMode;
   const vals=c.days.map(x=>x.has?(mode==='o'?x.omzet:x.net):0);
   const starV=mode==='o'?c.luar.omzet:c.luar.net;
-  const maxV=Math.max(1,...vals.map(Math.abs),Math.abs(starV),mode==='o'?tg.daily*1.15:0);
-  const H=118;
+  const maxV=Math.max(1,...vals.map(Math.abs),Math.abs(starV));
+  const wide=window.innerWidth>=700;
+  const H=wide?122:112,CH=wide?146:162;
   let bars='';
   vals.forEach((v,i)=>{
     const h=v?Math.max(3,Math.abs(v)/maxV*H):0;
-    const col=mode==='o'?(v>=tg.daily?'var(--ink)':'var(--bar2)'):(v>=0?'var(--ink)':'#e3b4b4');
-    const sel=S.dashSel===i+1?';outline:2px solid #8f8f97;outline-offset:1px':'';
-    bars+='<div class="b" style="height:'+h+'px;background:'+col+sel+'" onclick="dashPick('+(i+1)+')"></div>';
+    const col=v>=0?'var(--ink)':'#e3b4b4';
+    bars+='<div class="dcol'+(S.dashSel===i+1?' sel':'')+'" onclick="dashPick('+(i+1)+')">'+(v?'<span class="lv">'+lblJ(v)+'</span>':'')+'<div class="b" style="height:'+h+'px;background:'+col+'"></div></div>';
   });
-  const tl=mode==='o'?'<div class="tline" style="bottom:'+(tg.daily/maxV*H)+'px"></div><span class="tlbl" style="bottom:'+(tg.daily/maxV*H+2)+'px">target '+short(tg.daily)+'</span>':'';
   let info='';
   if(S.dashSel){const x=c.days[S.dashSel-1];info='<div class="infoline"><span>'+HF[dow(x.date)]+', '+x.day+' '+MN[+c.month.slice(5,7)-1]+'</span><b>'+(x.has?rp(mode==='o'?x.omzet:x.net):'belum ada data')+'</b></div>';}
   const starList=S.starOpen?'<div class="infoline" style="display:block"><div style="display:flex;justify-content:space-between;font-weight:700;margin-bottom:6px"><span>'+ic('star')+' Luar toko · '+MN[+c.month.slice(5,7)-1]+'</span><span>'+rp(c.luar.omzet)+'</span></div>'+
@@ -475,9 +492,10 @@ function renderDash(d){
   '<div style="display:flex;flex-direction:column;gap:12px">'+
   '<div class="card bd">'+
     '<div class="hd"><span class="lbl" style="font-size:13px">Achievement</span>'+
-      '<div style="display:flex;align-items:center;gap:8px"><span style="font-size:24px;font-weight:700">'+pctTxt(t.achievement)+'</span>'+
-      '<button class="rbtn'+(S.recOpen?' open':'')+'" onclick="toggleRec()" aria-label="Rekomendasi">'+ic('down')+'</button></div></div>'+
-    '<div class="prog"><div style="width:'+Math.min(100,t.achievement)+'%"></div></div>'+
+      '<button class="rbtn'+(S.recOpen?' open':'')+'" onclick="toggleRec()" aria-label="Rekomendasi">'+ic('down')+'</button></div>'+
+    (function(){const w=Math.min(100,Math.max(0,t.achievement));
+      return w>=24?'<div class="bigprog"><div style="width:'+w+'%"><span>'+pctTxt(t.achievement)+'</span></div></div>'
+        :'<div class="bigprog"><div style="width:'+w+'%;padding:0"></div><span class="out" style="left:calc('+w+'% + 12px)">'+pctTxt(t.achievement)+'</span></div>';})()+
     '<div class="hd" style="font-size:12px;color:var(--ink2)"><span>Target '+rp(tg.daily)+'/hari</span><span><b style="color:var(--ink)">'+rp(t.omzet)+'</b> / '+rp(tg.monthly)+'</span></div>'+
     (S.recOpen?
     '<div class="divider">'+
@@ -510,8 +528,8 @@ function renderDash(d){
     '<div class="hd" style="margin-bottom:10px"><span style="font-size:13px;font-weight:700">'+(mode==='o'?'Omzet':'Net profit')+' harian</span>'+
       '<div class="seg"><button class="'+(mode==='o'?'on':'')+'" onclick="setDashMode(\'o\')">Omzet</button><button class="'+(mode==='n'?'on':'')+'" onclick="setDashMode(\'n\')">Net profit</button></div></div>'+
     '<div style="display:flex;align-items:flex-end;gap:6px">'+
-      '<div class="dchart" style="flex:1">'+tl+bars+'</div>'+
-      '<button class="starcol" onclick="toggleStar()" aria-label="Pemasukan luar toko"><span style="font-size:10px;color:var(--ink2);margin-bottom:3px">'+(starV?short(starV):'')+'</span>'+
+      '<div class="dchart'+(wide?'':' vert')+'" style="flex:1;height:'+CH+'px">'+bars+'</div>'+
+      '<button class="starcol" style="height:'+CH+'px" onclick="toggleStar()" aria-label="Pemasukan luar toko"><span class="lv" style="font-size:9px;color:var(--ink2);margin-bottom:3px;white-space:nowrap'+(wide?'':';writing-mode:vertical-rl;transform:rotate(180deg)')+'">'+(starV?lblJ(starV):'')+'</span>'+
       '<span class="starbar" style="height:'+(starV?Math.max(3,Math.abs(starV)/maxV*H):0)+'px"></span></button>'+
     '</div>'+
     '<div style="display:flex;align-items:center;gap:6px;margin-top:4px"><div class="xl" style="flex:1;margin:0"><span>1</span><span>10</span><span>20</span><span>'+c.daysInMonth+'</span></div><div style="width:30px;text-align:center;font-size:13px">'+ic('star')+'</div></div>'+
@@ -694,7 +712,8 @@ function renderDbStatic(){
     '<div class="card np" id="yCard"></div>'+
     '<div class="card np" id="cCard"></div>'+
     '<div class="card" id="vsCard" style="padding:12px 14px 4px"></div>'+
-    '<div class="grid2"><button class="btn2" onclick="$(\'csvFile\').click()">'+ic('up')+' Import CSV</button><button class="btn2" onclick="exportCsv()">'+ic('dl')+' Export CSV</button></div>'+
+    '<div class="grid2"><button class="btn2" onclick="$(\'csvFile\').click()">'+ic('up')+' Import Excel</button><button class="btn2" onclick="exportCsv()">'+ic('dl')+' Export CSV</button></div>'+
+    '<div id="impPanel"></div>'+
     '<div class="msg" id="impMsg"></div>'+
     '<button class="link" onclick="resetApiKey()">Ganti kunci akses</button>'+
   '</div>';
@@ -828,14 +847,13 @@ function renderCmp(){
   const y=S.yearView||+S.month.slice(0,4),a=yd(y),b=yd(y-1),el=$('cCard');if(!el)return;
   if(!a||!b){el.innerHTML='<div style="padding:16px" class="sub">Memuat perbandingan...</div>';return;}
   const mode=S.cMode,va=a.map(x=>isFuture(x.month)?null:(mode==='o'?x.omzet:x.net)),vb=b.map(x=>mode==='o'?x.omzet:x.net);
-  const maxV=Math.max(1,...va.filter(v=>v!==null).map(Math.abs),...vb.map(Math.abs)),H=174;
-  const lbl=v=>{const a=Math.abs(v);return (v<0?'-':'')+'Rp'+(a>=1e6?(a/1e6).toLocaleString('id-ID',{maximumFractionDigits:1})+'jt':Math.round(a/1e3)+'rb');};
+  const maxV=Math.max(1,...va.filter(v=>v!==null).map(Math.abs),...vb.map(Math.abs)),H=160;
   let bars='';
   for(let i=0;i<12;i++){
     const x=va[i],z=vb[i];
     const hx=x?Math.max(3,Math.abs(x)/maxV*H):0,hz=z?Math.max(3,Math.abs(z)/maxV*H):0;
-    bars+='<div class="gg"><div class="gb" style="height:'+hx+'px;background:var(--ink);color:#fff">'+(x&&hx>34?'<span>'+lbl(x)+'</span>':'')+'</div>'+
-      '<div class="gb" style="height:'+hz+'px;background:var(--bar2);color:var(--ink)">'+(z&&hz>34?'<span>'+lbl(z)+'</span>':'')+'</div></div>';
+    bars+='<div class="gg"><div class="gbw">'+(x?'<span style="font-weight:700;color:var(--ink)">'+lblJ(x)+'</span>':'')+'<div class="gb" style="height:'+hx+'px;background:'+(x<0?'#e3b4b4':'var(--ink)')+'"></div></div>'+
+      '<div class="gbw">'+(z?'<span style="color:var(--ink2)">'+lblJ(z)+'</span>':'')+'<div class="gb" style="height:'+hz+'px;background:var(--bar2)"></div></div></div>';
   }
   let table='';
   if(S.cOpen){
@@ -852,7 +870,7 @@ function renderCmp(){
     '<div class="hd"><b style="font-size:14px">'+y+' vs '+(y-1)+'</b><div style="display:flex;align-items:center;gap:8px"><div class="seg"><button class="'+(mode==='o'?'on':'')+'" onclick="S.cMode=\'o\';renderCmp()">Omzet</button><button class="'+(mode==='n'?'on':'')+'" onclick="S.cMode=\'n\';renderCmp()">Net profit</button></div>'+
     '<button class="rbtn dark'+(S.cOpen?' open':'')+'" onclick="S.cOpen=!S.cOpen;renderCmp()" aria-label="Rincian">'+ic('down')+'</button></div></div>'+
     '<div class="legend"><span><i style="background:var(--ink)"></i>'+y+'</span><span><i style="background:var(--bar2)"></i>'+(y-1)+'</span></div>'+
-    '<div class="gchart">'+bars+'</div><div class="ml" style="gap:2px">'+MN.map(m=>'<div>'+m[0]+'</div>').join('')+'</div></div>'+table;
+    '<div class="gscroll"><div><div class="gchart" style="gap:6px">'+bars+'</div><div class="ml" style="gap:6px">'+MN.map(m=>'<div>'+m+'</div>').join('')+'</div></div></div></div>'+table;
 }
 
 function renderVs(){
@@ -916,6 +934,170 @@ function importCsv(input){
   };
   r.onerror=()=>{msg.className='msg err';msg.textContent='Gagal membaca file.';};
   r.readAsText(f,'UTF-8');
+}
+
+// =====================================================
+// IMPORT EXCEL (.xlsx) — format laporan bulanan per tab
+// Tab = nama bulan; kolom dicari dari judul: TANGGAL, HIJAB/OMZET, DISKON,
+// PENGELUARAN, KARYAWAN, BONUS. Baris tanpa tanggal setelah tanggal terakhir = ★.
+// =====================================================
+function importFile(input){
+  const f=input.files&&input.files[0];if(!f)return;
+  if(/\.xlsx$/i.test(f.name)){
+    const msg=$('impMsg');msg.className='msg';msg.textContent='Membaca file Excel...';
+    f.arrayBuffer().then(buf=>readXlsx(buf)).then(sheets=>{
+      const p=parseSalesBook(sheets,f.name);
+      if(!p.months.length)throw new Error('Tidak ada tab bulan (JANUARI–DESEMBER) dengan format yang dikenali.');
+      IMP=p;msg.textContent='';renderImport();
+    }).catch(e=>{msg.className='msg err';msg.textContent=e.message||'File tidak bisa dibaca.';}).finally(()=>{input.value='';});
+  }else importCsv(input);
+}
+
+async function readXlsx(buf){
+  const dv=new DataView(buf),u8=new Uint8Array(buf),td=new TextDecoder();
+  let e=-1;for(let i=u8.length-22;i>=Math.max(0,u8.length-65557);i--){if(dv.getUint32(i,true)===0x06054b50){e=i;break;}}
+  if(e<0)throw new Error('File bukan Excel (.xlsx) yang valid.');
+  const n=dv.getUint16(e+10,true);let p=dv.getUint32(e+16,true);const files={};
+  for(let k=0;k<n;k++){
+    const method=dv.getUint16(p+10,true),csize=dv.getUint32(p+20,true),nl=dv.getUint16(p+28,true),xl=dv.getUint16(p+30,true),cl=dv.getUint16(p+32,true),off=dv.getUint32(p+42,true);
+    files[td.decode(u8.subarray(p+46,p+46+nl))]={method,csize,off};p+=46+nl+xl+cl;
+  }
+  const read=async name=>{
+    const f=files[name];if(!f)return null;
+    const s=f.off+30+dv.getUint16(f.off+26,true)+dv.getUint16(f.off+28,true),data=u8.subarray(s,s+f.csize);
+    if(f.method===0)return td.decode(data);
+    if(typeof DecompressionStream==='undefined')throw new Error('Browser ini belum mendukung baca Excel. Perbarui iPadOS/Safari, atau pakai CSV.');
+    return await new Response(new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text();
+  };
+  const xml=t=>new DOMParser().parseFromString(t,'application/xml');
+  const byTag=(d,t)=>Array.from(d.getElementsByTagNameNS('*',t));
+  const ss=[];const sst=await read('xl/sharedStrings.xml');
+  if(sst)byTag(xml(sst),'si').forEach(si=>ss.push(byTag(si,'t').map(t=>t.textContent).join('')));
+  const wb=xml(await read('xl/workbook.xml')),rels=xml(await read('xl/_rels/workbook.xml.rels'));
+  const relMap={};byTag(rels,'Relationship').forEach(r=>relMap[r.getAttribute('Id')]=r.getAttribute('Target'));
+  const colIdx=ref=>{let c=0;for(const ch of ref.replace(/\d+/g,''))c=c*26+(ch.charCodeAt(0)-64);return c-1;};
+  const out=[];
+  for(const sh of byTag(wb,'sheet')){
+    const rid=sh.getAttribute('r:id')||sh.getAttributeNS('http://schemas.openxmlformats.org/officeDocument/2006/relationships','id');
+    let tgt=relMap[rid];if(!tgt)continue;
+    tgt=tgt.startsWith('/')?tgt.slice(1):'xl/'+tgt.replace(/^\.\//,'');
+    const t=await read(tgt);if(!t)continue;
+    const rows=[];
+    byTag(xml(t),'row').forEach(r=>{
+      const ri=+r.getAttribute('r')-1,arr=[];
+      byTag(r,'c').forEach(c=>{
+        const ty=c.getAttribute('t'),v=byTag(c,'v')[0];let val=null;
+        if(ty==='s')val=v?ss[+v.textContent]:null;
+        else if(ty==='inlineStr')val=byTag(c,'t').map(x=>x.textContent).join('');
+        else if(ty==='str'||ty==='e')val=v?v.textContent:null;
+        else if(ty==='b')val=v?v.textContent==='1':null;
+        else val=v&&v.textContent!==''?Number(v.textContent):null;
+        arr[colIdx(c.getAttribute('r'))]=val;
+      });
+      rows[ri]=arr;
+    });
+    out.push({name:sh.getAttribute('name'),rows:rows});
+  }
+  return out;
+}
+
+const MONTH_KEYS=[['JANUARI','JAN'],['FEBRUARI','FEB','PEBRUARI'],['MARET','MAR'],['APRIL','APR'],['MEI'],['JUNI','JUN'],['JULI','JUL'],['AGUSTUS','AGUS','AGU','AGT'],['SEPTEMBER','SEPT','SEP'],['OKTOBER','OKT','OCT'],['NOVEMBER','NOPEMBER','NOV','NOP'],['DESEMBER','DES','DEC']];
+function monthFromName(name){
+  const s=String(name||'').toUpperCase().replace(/[^A-Z]/g,'');
+  for(let i=0;i<12;i++)if(MONTH_KEYS[i].some(k=>s===k||(k.length>=5&&s.startsWith(k))))return i+1;
+  return 0;
+}
+function parseSalesBook(sheets,fileName){
+  const num=v=>{if(v===null||v===undefined||v==='')return 0;if(typeof v==='number')return v;return parseAmount(v);};
+  const yearVotes={};const vote=s=>{const m=String(s||'').match(/20\d\d/);if(m)yearVotes[m[0]]=(yearVotes[m[0]]||0)+1;};
+  vote(fileName);vote(fileName);
+  const months=[];
+  sheets.forEach(sh=>{
+    const mo=monthFromName(sh.name);if(!mo)return;
+    const R=sh.rows;let h=-1;
+    for(let i=0;i<Math.min(R.length,15);i++){const r=R[i]||[];if(r.some(v=>String(v||'').trim().toUpperCase()==='TANGGAL')){h=i;break;}}
+    if(h<0)return;
+    for(let i=0;i<h;i++)(R[i]||[]).forEach(vote);
+    // judul kolom bisa satu atau dua baris
+    const up=v=>String(v==null?'':v).trim().toUpperCase();
+    const len=Math.max((R[h]||[]).length,(R[h-1]||[]).length);
+    const H=[];for(let c=0;c<len;c++)H.push([up((R[h-1]||[])[c]),up((R[h]||[])[c])].filter(Boolean));
+    const col=(...names)=>H.findIndex(parts=>parts.some(x=>names.some(n=>x.startsWith(n))));
+    const C={tgl:col('TANGGAL','TGL'),omz:col('HIJAB','OMZET','OMSET','PEMASUKAN'),dis:col('DISKON'),ach:col('ACHIEVEMENT','ACHIEVMENT'),exp:col('PENGELUARAN'),emp:col('KARYAWAN','EMP'),bon:col('BONUS'),hari:col('HARI')};
+    if(C.tgl<0||C.omz<0)return;
+    // target harian: di kolom ACHIEVEMENT, pada baris judul atau baris tepat di bawahnya
+    let daily=0;
+    if(C.ach>=0)for(let i=Math.max(0,h-1);i<=h+2;i++){
+      const r=R[i]||[];if(typeof r[C.tgl]==='number')continue;
+      const v=r[C.ach],n=typeof v==='number'?v:parseAmount(v);
+      if(n>=10000){daily=n;break;}
+    }
+    const days=[],tail=[];let lastDay=-1;
+    for(let i=h+1;i<R.length;i++){
+      const r=R[i];if(!r)continue;
+      const t=r[C.tgl],o=num(r[C.omz]),d=C.dis>=0?num(r[C.dis]):0,x=C.exp>=0?num(r[C.exp]):0,b=C.bon>=0?num(r[C.bon]):0,em=C.emp>=0?num(r[C.emp]):0;
+      const label=String((C.hari>=0?r[C.hari]:r[0])||'').toUpperCase();
+      if(typeof t==='number'&&t>=1&&t<=31&&Math.floor(t)===t){
+        lastDay=i;
+        if(o>0||d>0||x>0||b>0)days.push({day:t,omzet:o,discount:d,expense:x,bonus:b,emp:em});
+        continue;
+      }
+      if(lastDay<0||label.includes('TOTAL'))continue;
+      if(o>0){const note=r.slice(C.bon+1).find(v=>typeof v==='string'&&v.trim());tail.push({amount:o,discount:d,expense:x,bonus:b,ket:note?String(note).trim():'Luar toko'});}
+    }
+    // buang baris yang ternyata TOTAL (jumlahnya sama dengan jumlah semua hari)
+    const sumDays=days.reduce((s,x)=>s+x.omzet,0);
+    let luar=tail.filter(x=>Math.abs(x.amount-sumDays)>1000);
+    const sumAll=sumDays+luar.reduce((s,x)=>s+x.amount,0);
+    luar=luar.filter(x=>Math.abs(x.amount-sumAll)>1000);
+    if(!days.length&&!luar.length)return;
+    months.push({month:mo,sheet:sh.name,daily:daily,days:days,luar:luar});
+  });
+  months.sort((a,b)=>a.month-b.month);
+  let year=+(Object.keys(yearVotes).sort((a,b)=>yearVotes[b]-yearVotes[a])[0]||new Date().getFullYear());
+  return {year:year,months:months,useTarget:true,file:fileName};
+}
+
+let IMP=null;
+function renderImport(){
+  const el=$('impPanel');if(!el)return;
+  if(!IMP){el.innerHTML='';return;}
+  const p=IMP,y=p.year;
+  let tot=0,days=0,lu=0,rows='';
+  p.months.forEach(m=>{
+    const so=m.days.reduce((s,x)=>s+x.omzet,0),sl=m.luar.reduce((s,x)=>s+x.amount,0);
+    tot+=so;days+=m.days.length;lu+=m.luar.length;
+    rows+='<tr><td>'+MF[m.month-1]+'</td><td>'+m.days.length+'</td><td>'+rpj(so)+'</td><td>'+(m.luar.length?rpj(sl):'—')+'</td><td>'+(m.daily?rpj(m.daily):'—')+'</td></tr>';
+  });
+  el.innerHTML='<div class="card bd np" style="margin-top:4px">'+
+    '<div style="padding:12px 14px"><div class="hd"><b style="font-size:14px">'+ic('up')+' Pratinjau import</b><button class="iconbtn" onclick="IMP=null;renderImport()" aria-label="Batal">'+ic('x')+'</button></div>'+
+    '<div class="sub" style="margin-top:4px">'+esc(p.file)+' → <b style="color:var(--ink)">'+S.branch+'</b></div>'+
+    '<div class="hd" style="margin-top:10px"><span class="lbl">Tahun data</span><div style="display:flex;align-items:center;gap:6px"><button class="iconbtn" onclick="IMP.year--;renderImport()" aria-label="Tahun sebelumnya">'+ic('left')+'</button><b>'+y+'</b><button class="iconbtn" onclick="IMP.year++;renderImport()" aria-label="Tahun berikutnya">'+ic('right')+'</button></div></div></div>'+
+    '<table class="imptbl"><thead><tr><th>Bulan</th><th>Hari</th><th>Omzet</th><th>'+ic('star')+' Luar</th><th>Target/hari</th></tr></thead><tbody>'+rows+
+    '<tr><td><b>Total</b></td><td><b>'+days+'</b></td><td><b>'+rpj(tot)+'</b></td><td>'+(lu?lu+'×':'—')+'</td><td></td></tr></tbody></table>'+
+    '<div style="padding:12px 14px">'+
+      '<label style="display:flex;align-items:center;gap:8px;font-size:13px"><input type="checkbox" '+(p.useTarget?'checked':'')+' onchange="IMP.useTarget=this.checked"> Pakai target harian dari file</label>'+
+      '<div class="sub" style="margin:8px 0 10px">Tanggal yang sudah ada datanya di app akan dilewati, jadi tidak dobel. Profit, modal, achievement & net profit dihitung ulang otomatis.</div>'+
+      '<div style="display:flex;gap:8px"><button class="btn2" onclick="IMP=null;renderImport()">Batal</button><button class="btn2 dark" id="impGo" onclick="runImport()">'+ic('check')+' Import ke '+S.branch+'</button></div>'+
+    '</div></div>';
+}
+function runImport(){
+  const p=IMP,y=p.year,pad=n=>String(n).padStart(2,'0');
+  const records=[],luar=[],targets=[];
+  p.months.forEach(m=>{
+    const mk=y+'-'+pad(m.month),dim=new Date(y,m.month,0).getDate();
+    m.days.forEach(d=>{if(d.day<=dim)records.push({date:mk+'-'+pad(d.day),omzet:d.omzet,discount:d.discount,bonus:d.bonus,expense:d.expense,emp:d.emp});});
+    m.luar.forEach(l=>luar.push({month:mk,amount:l.amount,discount:l.discount,bonus:l.bonus,expense:l.expense,ket:l.ket}));
+    if(p.useTarget&&m.daily)targets.push({month:mk,amount:Math.round(m.daily*dim)});
+  });
+  const b=$('impGo');b.disabled=true;b.textContent='Mengimpor...';
+  const msg=$('impMsg');msg.className='msg';msg.textContent='Mengirim '+records.length+' hari ke database...';
+  callApi('importHistoricalData',[{branch:S.branch,records:records,luar:luar,targets:targets}]).then(r=>{
+    IMP=null;renderImport();
+    msg.className='msg ok';
+    msg.textContent='Selesai: '+r.imported+' hari masuk'+(r.skipped?', '+r.skipped+' dilewati (sudah ada)':'')+(r.luarImported?', '+r.luarImported+' data ★':'')+(r.targetsSet?', '+r.targetsSet+' target bulan':'')+'.';
+    S.years={};refresh();
+  }).catch(e=>{msg.className='msg err';msg.textContent=e.message;b.disabled=false;b.textContent='Import ke '+S.branch;});
 }
 
 // =====================================================
