@@ -505,7 +505,13 @@ function renderDash(d){
   const isCur=c.month===S.today.slice(0,7);
   const todayD=+S.today.slice(8,10);
   const lastDay=isCur?todayD:c.daysInMonth;
-  const cmp=o=>{if(!o)return {o:null,n:null};const lim=isCur?Math.min(todayD,o.daysInMonth):o.daysInMonth;const a=sumTo(c,lastDay),b=sumTo(o,lim);return {o:pct(a.o,b.o),n:pct(a.n,b.n)};};
+  const cmp=o=>{if(!o)return {o:null,n:null};const lim=isCur?Math.min(todayD,o.daysInMonth):o.daysInMonth;const a=sumTo(c,lastDay),b=sumTo(o,lim);
+    // ★ tidak punya tanggal: dihitung penuh untuk bulan masing-masing
+    a.o+=c.luar.omzet;a.n+=c.luar.net;b.o+=(o.luar?o.luar.omzet:0);b.n+=(o.luar?o.luar.net:0);
+    return {o:pct(a.o,b.o),n:pct(a.n,b.n)};};
+  const L=c.luar,allO=t.omzet+L.omzet,allN=t.net+L.net;
+  const starNote=L.omzet?'<div class="sub" style="margin-top:2px">termasuk '+ic('star')+' '+rpj(L.omzet)+'</div>':'';
+  const starNoteN=L.omzet?'<div class="sub" style="margin-top:2px">termasuk '+ic('star')+' '+rpj(L.net)+'</div>':'';
   const cp=cmp(d.prev),cl=cmp(d.ly);
   const pLbl=mLabel(d.prev.month),lLbl=mLabel(d.ly.month);
 
@@ -521,7 +527,9 @@ function renderDash(d){
   const mode=S.dashMode;
   const vals=c.days.map(x=>x.has?(mode==='o'?x.omzet:x.net):0);
   const starV=mode==='o'?c.luar.omzet:c.luar.net;
-  const maxV=Math.max(1,...vals.map(Math.abs),Math.abs(starV));
+  // skala dari batang harian; batang ★ dibatasi tingginya supaya batang harian tetap terbaca
+  const maxD=Math.max(1,...vals.map(Math.abs));
+  const maxV=maxD;
   const wide=window.innerWidth>=700;
   const H=wide?122:112,CH=wide?146:162;
   let bars='';
@@ -570,9 +578,9 @@ function renderDash(d){
   '</div>'+
 
   '<div class="grid2">'+
-    '<div class="card"><div class="lbl">Omzet</div><div class="val">'+rp(t.omzet)+'</div>'+
+    '<div class="card"><div class="lbl">Omzet</div><div class="val">'+rp(allO)+'</div>'+starNote+
       '<div style="border-top:1px solid var(--line);margin-top:8px;padding-top:6px"><div class="cmp"><span>vs '+pLbl+'</span>'+pctSpan(cp.o)+'</div><div class="cmp"><span>vs '+lLbl+'</span>'+pctSpan(cl.o)+'</div></div></div>'+
-    '<div class="card"><div class="lbl">Net profit</div><div class="val"'+(t.net<0?' style="color:var(--red)"':'')+'>'+rp(t.net)+'</div>'+
+    '<div class="card"><div class="lbl">Net profit</div><div class="val"'+(allN<0?' style="color:var(--red)"':'')+'>'+rp(allN)+'</div>'+starNoteN+
       '<div style="border-top:1px solid var(--line);margin-top:8px;padding-top:6px"><div class="cmp"><span>vs '+pLbl+'</span>'+pctSpan(cp.n)+'</div><div class="cmp"><span>vs '+lLbl+'</span>'+pctSpan(cl.n)+'</div></div></div>'+
   '</div>'+
   (isCur?'<div class="sub" style="text-align:center;margin-top:-4px">Perbandingan memakai periode yang sama (tanggal 1–'+todayD+')</div>':'')+
@@ -583,7 +591,7 @@ function renderDash(d){
     '<div style="display:flex;align-items:flex-end;gap:6px">'+
       '<div class="dchart'+(wide?'':' vert')+'" style="flex:1;height:'+CH+'px">'+bars+'</div>'+
       '<button class="starcol" style="height:'+CH+'px" onclick="toggleStar()" aria-label="Pemasukan luar toko"><span class="lv" style="font-size:9px;color:var(--ink2);margin-bottom:3px;white-space:nowrap'+(wide?'':';writing-mode:vertical-rl;transform:rotate(180deg)')+'">'+(starV?lblJ(starV):'')+'</span>'+
-      '<span class="starbar" style="height:'+(starV?Math.max(3,Math.abs(starV)/maxV*H):0)+'px"></span></button>'+
+      '<span class="starbar" style="height:'+(starV?Math.min(H,Math.max(3,Math.abs(starV)/maxV*H)):0)+'px"></span></button>'+
     '</div>'+
     '<div style="display:flex;align-items:center;gap:6px;margin-top:4px"><div class="xl" style="flex:1;margin:0"><span>1</span><span>10</span><span>20</span><span>'+c.daysInMonth+'</span></div><div style="width:30px;text-align:center;font-size:13px">'+ic('star')+'</div></div>'+
     info+starList+
@@ -599,9 +607,9 @@ function renderDash(d){
     '<div class="card"><div class="lbl">'+ic('low')+' Hari terendah</div><div style="font-size:14px;font-weight:700;margin-top:4px">'+(worst?worst.day+' '+mShort+' · '+(worst.omzet>=1e6?rpj(worst.omzet):'Rp'+short(worst.omzet)):'–')+'</div></div>'+
   '</div>'+
   '<div class="grid3" style="gap:6px">'+
-    '<div class="card" style="padding:10px"><div class="sub">Profit</div><div style="font-size:13px;font-weight:700;margin-top:3px">'+rpj(t.profit)+'</div></div>'+
-    '<div class="card" style="padding:10px"><div class="sub">Bonus</div><div style="font-size:13px;font-weight:700;margin-top:3px">'+rpj(t.bonus)+'</div></div>'+
-    '<div class="card" style="padding:10px"><div class="sub">Pengeluaran</div><div style="font-size:13px;font-weight:700;margin-top:3px">'+rpj(t.expense)+'</div></div>'+
+    '<div class="card" style="padding:10px"><div class="sub">Profit</div><div style="font-size:13px;font-weight:700;margin-top:3px">'+rpj(t.profit+L.profit)+'</div></div>'+
+    '<div class="card" style="padding:10px"><div class="sub">Bonus</div><div style="font-size:13px;font-weight:700;margin-top:3px">'+rpj(t.bonus+L.bonus)+'</div></div>'+
+    '<div class="card" style="padding:10px"><div class="sub">Pengeluaran</div><div style="font-size:13px;font-weight:700;margin-top:3px">'+rpj(t.expense+L.expense)+'</div></div>'+
   '</div>'+
   '</div>';
 
