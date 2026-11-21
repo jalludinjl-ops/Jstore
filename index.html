@@ -130,9 +130,11 @@ input,select{font:inherit;color:inherit}
 .tt th{font-weight:600;font-size:11px;color:var(--ink2);background:var(--soft);position:sticky;top:0;z-index:2}
 .tt .s1,.tt .s2{position:sticky;background:var(--card);text-align:left;z-index:1;font-size:11px;padding:8px 4px}
 .tt th.s1,.tt th.s2{background:var(--soft);z-index:3}
-.tt .s1{left:0;width:24px;min-width:24px;padding-left:10px;text-align:right}
-.tt .s2{left:38px;width:30px;color:var(--ink2);border-right:1px solid var(--line);padding-right:8px}
+.tt .s1{left:0;width:34px;min-width:34px;max-width:34px;padding-left:6px;padding-right:6px;text-align:right}
+.tt .s2{left:34px;width:46px;min-width:46px;max-width:46px;color:var(--ink2);border-right:1px solid var(--line);padding-left:4px;padding-right:4px}
 .tt .c{text-align:center}
+.tt .nt{text-align:left;max-width:240px;overflow:hidden;text-overflow:ellipsis;color:var(--ink2)}
+.tt .ni{font-size:10px;margin-left:2px;color:var(--ink2)}
 .tt .pc{display:none;color:var(--ink2)}
 .editing .tt .pc{display:table-cell}
 .editing .tt tr.d{cursor:pointer}
@@ -478,7 +480,7 @@ function renderDash(d){
     bars+='<div class="dcol'+(S.dashSel===i+1?' sel':'')+'" onclick="dashPick('+(i+1)+')">'+(v?'<span class="lv">'+lblJ(v)+'</span>':'')+'<div class="b" style="height:'+h+'px;background:'+col+'"></div></div>';
   });
   let info='';
-  if(S.dashSel){const x=c.days[S.dashSel-1];info='<div class="infoline"><span>'+HF[dow(x.date)]+', '+x.day+' '+MN[+c.month.slice(5,7)-1]+'</span><b>'+(x.has?rp(mode==='o'?x.omzet:x.net):'belum ada data')+'</b></div>';}
+  if(S.dashSel){const x=c.days[S.dashSel-1];info='<div class="infoline" style="flex-wrap:wrap"><span>'+HF[dow(x.date)]+', '+x.day+' '+MN[+c.month.slice(5,7)-1]+'</span><b>'+(x.has?rp(mode==='o'?x.omzet:x.net):'belum ada data')+'</b>'+(x.note?'<div style="flex-basis:100%;color:var(--ink2)">'+ic('edit')+' '+esc(x.note)+'</div>':'')+'</div>';}
   const starList=S.starOpen?'<div class="infoline" style="display:block"><div style="display:flex;justify-content:space-between;font-weight:700;margin-bottom:6px"><span>'+ic('star')+' Luar toko · '+MN[+c.month.slice(5,7)-1]+'</span><span>'+rp(c.luar.omzet)+'</span></div>'+
     (c.luar.entries.length?c.luar.entries.map(e=>'<div style="display:flex;justify-content:space-between;color:var(--ink2)"><span>'+esc(e.ket||'Tanpa keterangan')+'</span><span>'+rp(e.amount)+'</span></div>').join(''):'<div style="color:var(--ink3)">Belum ada pemasukan luar toko.</div>')+'</div>':'';
 
@@ -592,9 +594,10 @@ function buildInput(){
   '<div class="fgrid" style="'+(toko?'':'grid-template-columns:repeat(3,minmax(0,1fr))')+'">'+
     '<label class="fld"><small>Diskon</small><input id="inDis" inputmode="numeric" value="0" enterkeyhint="next"></label>'+
     '<label class="fld"><small>Bonus</small><input id="inBon" inputmode="numeric" value="0" enterkeyhint="next"></label>'+
-    '<label class="fld"><small>Peng.</small><input id="inExp" inputmode="numeric" value="0" enterkeyhint="done"></label>'+
+    '<label class="fld"><small>Peng.</small><input id="inExp" inputmode="numeric" value="0" enterkeyhint="'+(toko?'next':'done')+'"></label>'+
     (toko?'<div class="fld"><small>Emp</small><div class="stp"><button onclick="stepEmp(-1)" aria-label="Kurangi">−</button><b id="empV">'+S.emp+'</b><button onclick="stepEmp(1)" aria-label="Tambah">+</button></div></div>':'')+
   '</div>'+
+  (toko?'<label class="fld"><small>'+ic('edit')+' Catatan <span style="color:var(--ink3)">(opsional)</span></small><input id="inNote" maxlength="200" placeholder="Contoh: hujan, toko sepi" enterkeyhint="done"></label>':'')+
   '<div class="card bd prev">'+
     '<div class="lbl" style="margin-bottom:8px">'+ic('eye')+' Pratinjau</div>'+
     '<div class="r"><span>Profit (35%)</span><span id="pvPro">Rp0</span></div>'+
@@ -608,7 +611,7 @@ function buildInput(){
   '</div>';
 
   ['inOmz','inDis','inBon','inExp'].forEach(id=>bindNum($(id),updatePreview));
-  const order=toko?['inOmz','inDis','inBon','inExp']:['inOmz','inKet','inDis','inBon','inExp'];
+  const order=toko?['inOmz','inDis','inBon','inExp','inNote']:['inOmz','inKet','inDis','inBon','inExp'];
   order.forEach((id,i)=>$(id).addEventListener('keydown',e=>{
     if(e.key!=='Enter')return;e.preventDefault();
     if(i<order.length-1)$(order[i+1]).focus();else saveInput();
@@ -647,13 +650,14 @@ function updateInputData(){
     const isToday=S.inDate===S.today;
     $('listTitle').innerHTML=isToday?'Tercatat hari ini':'Tercatat di tanggal ini · edit lewat Database '+ic('lock');
     let h='';
-    if(!x||!x.has){h='<div class="sub" style="padding:6px 0">Belum ada transaksi.</div>';}
+    if(!x||!x.has){h='<div class="sub" style="padding:6px 0">Belum ada transaksi.</div>'+(x&&x.note?'<div style="font-size:12px;padding-top:4px">'+ic('edit')+' '+esc(x.note)+'</div>':'');}
     else{
       x.incomes.forEach((it,i)=>{
         h+='<div class="row"><span class="badge">'+(i+1)+'</span><span style="flex:1">'+rp(it.amount)+'</span>'+
           (isToday?'<button class="iconbtn" onclick="editIncome(\''+it.id+'\','+it.amount+')" aria-label="Edit">'+ic('edit')+'</button><button class="iconbtn red" onclick="delIncome(\''+it.id+'\')" aria-label="Hapus">'+ic('trash')+'</button>':'<span class="sub">'+ic('lock')+'</span>')+'</div>';
       });
       h+='<div class="sub" style="padding-top:8px">Diskon '+rp(x.discount)+' · Bonus '+rp(x.bonus)+' · Peng. '+rp(x.expense)+' · Emp '+(x.emp||0)+'</div>';
+      if(x.note)h+='<div style="font-size:12px;padding-top:6px">'+ic('edit')+' '+esc(x.note)+'</div>';
     }
     $('inList').innerHTML=h;
   }else{
@@ -674,8 +678,9 @@ function saveInput(){
   if(S.inMode==='toko'){
     const x=dayData(S.inDate);
     const empChanged=S.empTouched&&(!x||S.emp!==(x.emp||0));
-    if(!amt&&!dis&&!bon&&!exp&&!empChanged){inMsg('Masukkan nominal terlebih dahulu.');return;}
-    action='saveDaily';args=[{branch:S.branch,date:S.inDate,amount:amt,discount:dis,bonus:bon,expense:exp,emp:S.empTouched?S.emp:null}];
+    const note=($('inNote')?$('inNote').value:'').trim();
+    if(!amt&&!dis&&!bon&&!exp&&!empChanged&&!note){inMsg('Masukkan nominal terlebih dahulu.');return;}
+    action='saveDaily';args=[{branch:S.branch,date:S.inDate,amount:amt,discount:dis,bonus:bon,expense:exp,emp:S.empTouched?S.emp:null,note:note}];
   }else{
     if(!amt){inMsg('Isi nominal luar toko terlebih dahulu.');return;}
     action='addLuar';args=[{branch:S.branch,month:S.luarMonth,ket:$('inKet').value.trim(),amount:amt,discount:dis,bonus:bon,expense:exp}];
@@ -684,6 +689,7 @@ function saveInput(){
   callApi(action,args).then(()=>{
     ['inOmz','inDis','inBon','inExp'].forEach(id=>$(id).value='0');
     if($('inKet'))$('inKet').value='';
+    if($('inNote'))$('inNote').value='';
     S.empTouched=false;
     updatePreview();inMsg('✓ Tersimpan',true);
     $('inOmz').focus();
@@ -727,22 +733,22 @@ function renderDbTable(){
   m.days.forEach(x=>{
     const h=HS[dow(x.date)];
     if(!x.has){
-      rows+='<tr class="'+(x.date===td?'e td':'e')+(S.dbEdit?' d':'')+(S.dbSel===x.date?' sel':'')+'" data-k="'+x.date+'"><td class="s1">'+x.day+'</td><td class="s2">'+h+'</td><td>'+(x.date===td?'hari ini':'—')+'</td>'+'<td></td>'.repeat(8)+'<td class="pc">'+ic('plus')+'</td></tr>';
+      rows+='<tr class="'+(x.date===td?'e td':'e')+(S.dbEdit?' d':'')+(S.dbSel===x.date?' sel':'')+'" data-k="'+x.date+'"><td class="s1">'+x.day+'</td><td class="s2">'+h+(x.note?'<span class="ni">✎</span>':'')+'</td><td>'+(x.date===td?'hari ini':'—')+'</td>'+'<td></td>'.repeat(8)+'<td class="nt">'+esc(x.note||'')+'</td><td class="pc">'+ic('plus')+'</td></tr>';
       return;
     }
-    rows+='<tr class="d'+(x.date===td?' td':'')+(S.dbSel===x.date?' sel':'')+'" data-k="'+x.date+'"><td class="s1">'+x.day+'</td><td class="s2">'+h+'</td><td>'+rp(x.omzet)+'</td><td>'+rp(x.profit)+'</td><td>'+rp(x.modal)+'</td><td>'+rp(x.discount)+'</td>'+
-      '<td style="'+(x.achievement>=100?'font-weight:700':'color:var(--ink2)')+'">'+pctTxt(x.achievement)+'</td><td>'+rp(x.expense)+'</td><td class="c">'+(x.emp||0)+'</td><td>'+rp(x.bonus)+'</td><td style="font-weight:700'+(x.net<0?';color:var(--red)':'')+'">'+rp(x.net)+'</td><td class="pc">'+ic('edit')+'</td></tr>';
+    rows+='<tr class="d'+(x.date===td?' td':'')+(S.dbSel===x.date?' sel':'')+'" data-k="'+x.date+'"><td class="s1">'+x.day+'</td><td class="s2">'+h+(x.note?'<span class="ni">✎</span>':'')+'</td><td>'+rp(x.omzet)+'</td><td>'+rp(x.profit)+'</td><td>'+rp(x.modal)+'</td><td>'+rp(x.discount)+'</td>'+
+      '<td style="'+(x.achievement>=100?'font-weight:700':'color:var(--ink2)')+'">'+pctTxt(x.achievement)+'</td><td>'+rp(x.expense)+'</td><td class="c">'+(x.emp||0)+'</td><td>'+rp(x.bonus)+'</td><td style="font-weight:700'+(x.net<0?';color:var(--red)':'')+'">'+rp(x.net)+'</td><td class="nt">'+esc(x.note||'')+'</td><td class="pc">'+ic('edit')+'</td></tr>';
   });
   const L=m.luar,t=m.toko;
-  rows+='<tr class="sr d'+(S.dbSel==='star'?' sel':'')+'" data-k="star"><td class="s1">'+ic('star')+'</td><td class="s2">'+(L.count?L.count+'×':'')+'</td><td>'+rp(L.omzet)+'</td><td>'+rp(L.profit)+'</td><td>'+rp(L.modal)+'</td><td>'+rp(L.discount)+'</td><td class="cn">—</td><td>'+rp(L.expense)+'</td><td class="c cn">—</td><td>'+rp(L.bonus)+'</td><td style="font-weight:700">'+rp(L.net)+'</td><td class="pc">'+ic('edit')+'</td></tr>';
-  rows+='<tr class="tot"><td class="s1" colspan="2" style="background:var(--ink);color:#fff;text-align:left">Total</td><td>'+rp(t.omzet+L.omzet)+'</td><td>'+rp(t.profit+L.profit)+'</td><td>'+rp(t.modal+L.modal)+'</td><td>'+rp(t.discount+L.discount)+'</td><td>'+pctTxt(t.achievement)+'</td><td>'+rp(t.expense+L.expense)+'</td><td class="c">'+(t.empAvg||0).toFixed(1).replace('.',',')+'</td><td>'+rp(t.bonus+L.bonus)+'</td><td>'+rp(t.net+L.net)+'</td><td class="pc"></td></tr>';
+  rows+='<tr class="sr d'+(S.dbSel==='star'?' sel':'')+'" data-k="star"><td class="s1">'+ic('star')+'</td><td class="s2">'+(L.count?L.count+'×':'')+'</td><td>'+rp(L.omzet)+'</td><td>'+rp(L.profit)+'</td><td>'+rp(L.modal)+'</td><td>'+rp(L.discount)+'</td><td class="cn">—</td><td>'+rp(L.expense)+'</td><td class="c cn">—</td><td>'+rp(L.bonus)+'</td><td style="font-weight:700">'+rp(L.net)+'</td><td class="nt">'+esc(L.entries.map(e=>e.ket).filter(Boolean).join(' · '))+'</td><td class="pc">'+ic('edit')+'</td></tr>';
+  rows+='<tr class="tot"><td class="s1" colspan="2" style="background:var(--ink);color:#fff;text-align:left">Total</td><td>'+rp(t.omzet+L.omzet)+'</td><td>'+rp(t.profit+L.profit)+'</td><td>'+rp(t.modal+L.modal)+'</td><td>'+rp(t.discount+L.discount)+'</td><td>'+pctTxt(t.achievement)+'</td><td>'+rp(t.expense+L.expense)+'</td><td class="c">'+(t.empAvg||0).toFixed(1).replace('.',',')+'</td><td>'+rp(t.bonus+L.bonus)+'</td><td>'+rp(t.net+L.net)+'</td><td></td><td class="pc"></td></tr>';
 
   const el=$('dbTable');
   el.classList.toggle('editing',S.dbEdit);
   el.innerHTML=
     '<div class="hd" style="padding:12px"><div><div style="font-size:15px;font-weight:700">'+mLong(m.month)+'</div><div class="sub">'+(S.dbEdit?'ketuk baris untuk mengubah':t.filled+'/'+m.daysInMonth+' hari terisi')+'</div></div>'+
     '<button class="ebtn" onclick="toggleDbEdit()">'+(S.dbEdit?ic('check')+' Selesai':ic('edit')+' Edit')+'</button></div>'+
-    '<div class="tw"><table class="tt"><thead><tr><th class="s1">Tgl</th><th class="s2">Hari</th><th>Omzet</th><th>Profit</th><th>Modal</th><th>Diskon</th><th>Ach.</th><th>Pengeluaran</th><th class="c">Emp</th><th>Bonus</th><th>Net profit</th><th class="pc"></th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+    '<div class="tw"><table class="tt"><thead><tr><th class="s1">Tgl</th><th class="s2">Hari</th><th>Omzet</th><th>Profit</th><th>Modal</th><th>Diskon</th><th>Ach.</th><th>Pengeluaran</th><th class="c">Emp</th><th>Bonus</th><th>Net profit</th><th style="text-align:left">Catatan</th><th class="pc"></th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
     '<div id="dbPanel"></div>';
   el.querySelectorAll('tr[data-k]').forEach(tr=>tr.onclick=()=>{if(!S.dbEdit)return;S.dbSel=tr.dataset.k;renderDbTable();});
   if(S.dbEdit&&S.dbSel)renderPanel();
@@ -771,6 +777,7 @@ function renderPanel(){
     '</div><button class="chip" style="margin:6px 0 4px;background:var(--soft);color:var(--ink)" onclick="addTrxRow()">'+ic('plus')+' Tambah transaksi</button>'+
     '<div class="fgrid" style="margin-top:8px"><label class="fld soft"><small>Diskon</small><input id="pdDis" inputmode="numeric" value="'+(fmtIn(x.discount)||'0')+'"></label><label class="fld soft"><small>Bonus</small><input id="pdBon" inputmode="numeric" value="'+(fmtIn(x.bonus)||'0')+'"></label><label class="fld soft"><small>Peng.</small><input id="pdExp" inputmode="numeric" value="'+(fmtIn(x.expense)||'0')+'"></label>'+
     '<div class="fld soft"><small>Emp</small><div class="stp"><button onclick="pdEmp(-1)">−</button><b id="pdEmp">'+(x.emp||0)+'</b><button onclick="pdEmp(1)">+</button></div></div></div>'+
+    '<label class="fld soft" style="margin-top:6px"><small>Catatan</small><input id="pdNote" maxlength="300" value="'+esc(x.note||'')+'" placeholder="Catatan hari ini"></label>'+
     '<div style="display:flex;gap:8px;margin-top:12px">'+(x.has?'<button class="btn2 danger" onclick="delDay()">'+ic('trash')+' Hapus hari ini</button>':'')+'<button class="btn2 dark" id="pdSave" onclick="saveDay()">'+ic('check')+' Simpan</button></div></div>';
   p.querySelectorAll('#trxList input,#pdDis,#pdBon,#pdExp').forEach(i=>bindNum(i));
   if(!inc.length)addTrxRow();
@@ -786,7 +793,7 @@ function afterDbSave(){S.dbSel=null;refresh();}
 function saveDay(){
   const incomes=[...document.querySelectorAll('#trxList .trx')].map(r=>({id:r.dataset.id,amount:parseAmount(r.querySelector('input').value)}));
   const b=$('pdSave');b.disabled=true;
-  callApi('updateDay',[{branch:S.branch,date:S.dbSel,incomes:incomes,discount:parseAmount($('pdDis').value),bonus:parseAmount($('pdBon').value),expense:parseAmount($('pdExp').value),emp:+$('pdEmp').textContent}])
+  callApi('updateDay',[{branch:S.branch,date:S.dbSel,incomes:incomes,discount:parseAmount($('pdDis').value),bonus:parseAmount($('pdBon').value),expense:parseAmount($('pdExp').value),emp:+$('pdEmp').textContent,note:$('pdNote').value.trim()}])
     .then(afterDbSave).catch(e=>{alert(e.message);b.disabled=false;});
 }
 function delDay(){
@@ -896,8 +903,9 @@ function renderVs(){
 function exportCsv(){
   const m=S.dbMonth;if(!m){alert('Data belum dimuat.');return;}
   const L=m.luar,t=m.toko;
-  const lines=[['Tanggal','Hari','Omzet','Profit','Modal','Diskon','Achievement','Pengeluaran','Emp','Bonus','Net profit'].join(',')];
-  m.days.forEach(x=>{if(!x.has)return;lines.push([x.date,HF[dow(x.date)],Math.round(x.omzet),Math.round(x.profit),Math.round(x.modal),x.discount,x.achievement.toFixed(1),x.expense,x.emp||0,x.bonus,Math.round(x.net)].join(','));});
+  const q=v=>'"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+  const lines=[['Tanggal','Hari','Omzet','Profit','Modal','Diskon','Achievement','Pengeluaran','Emp','Bonus','Net profit','Catatan'].join(',')];
+  m.days.forEach(x=>{if(!x.has)return;lines.push([x.date,HF[dow(x.date)],Math.round(x.omzet),Math.round(x.profit),Math.round(x.modal),x.discount,x.achievement.toFixed(1),x.expense,x.emp||0,x.bonus,Math.round(x.net),q(x.note)].join(','));});
   if(L.count)lines.push(['Luar toko','',L.omzet,Math.round(L.profit),Math.round(L.modal),L.discount,'',L.expense,'',L.bonus,Math.round(L.net)].join(','));
   lines.push(['Total','',t.omzet+L.omzet,Math.round(t.profit+L.profit),Math.round(t.modal+L.modal),t.discount+L.discount,t.achievement.toFixed(1),t.expense+L.expense,'',t.bonus+L.bonus,Math.round(t.net+L.net)].join(','));
   const blob=new Blob(['﻿'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
@@ -1025,8 +1033,10 @@ function parseSalesBook(sheets,fileName){
     const len=Math.max((R[h]||[]).length,(R[h-1]||[]).length);
     const H=[];for(let c=0;c<len;c++)H.push([up((R[h-1]||[])[c]),up((R[h]||[])[c])].filter(Boolean));
     const col=(...names)=>H.findIndex(parts=>parts.some(x=>names.some(n=>x.startsWith(n))));
-    const C={tgl:col('TANGGAL','TGL'),omz:col('HIJAB','OMZET','OMSET','PEMASUKAN'),dis:col('DISKON'),ach:col('ACHIEVEMENT','ACHIEVMENT'),exp:col('PENGELUARAN'),emp:col('KARYAWAN','EMP'),bon:col('BONUS'),hari:col('HARI')};
+    const C={tgl:col('TANGGAL','TGL'),omz:col('HIJAB','OMZET','OMSET','PEMASUKAN'),dis:col('DISKON'),ach:col('ACHIEVEMENT','ACHIEVMENT'),exp:col('PENGELUARAN'),emp:col('KARYAWAN','EMP'),bon:col('BONUS'),hari:col('HARI'),net:col('NET PROFIT','NET'),note:col('CATATAN','KETERANGAN','NOTE')};
     if(C.tgl<0||C.omz<0)return;
+    // catatan: kolom berjudul CATATAN/KETERANGAN, atau kolom tepat setelah NET PROFIT
+    const noteCol=C.note>=0?C.note:(C.net>=0?C.net+1:Math.max(C.bon,C.exp,C.emp)+2);
     // target harian: di kolom ACHIEVEMENT, pada baris judul atau baris tepat di bawahnya
     let daily=0;
     if(C.ach>=0)for(let i=Math.max(0,h-1);i<=h+2;i++){
@@ -1041,11 +1051,13 @@ function parseSalesBook(sheets,fileName){
       const label=String((C.hari>=0?r[C.hari]:r[0])||'').toUpperCase();
       if(typeof t==='number'&&t>=1&&t<=31&&Math.floor(t)===t){
         lastDay=i;
-        if(o>0||d>0||x>0||b>0)days.push({day:t,omzet:o,discount:d,expense:x,bonus:b,emp:em});
+        const nc=r[noteCol];
+        const nt=typeof nc==='string'?nc.trim():'';
+        if(o>0||d>0||x>0||b>0||nt)days.push({day:t,omzet:o,discount:d,expense:x,bonus:b,emp:em,note:nt});
         continue;
       }
       if(lastDay<0||label.includes('TOTAL'))continue;
-      if(o>0){const note=r.slice(C.bon+1).find(v=>typeof v==='string'&&v.trim());tail.push({amount:o,discount:d,expense:x,bonus:b,ket:note?String(note).trim():'Luar toko'});}
+      if(o>0){const note=typeof r[noteCol]==='string'&&r[noteCol].trim()?r[noteCol]:null;tail.push({amount:o,discount:d,expense:x,bonus:b,ket:note?String(note).trim():'Luar toko'});}
     }
     // buang baris yang ternyata TOTAL (jumlahnya sama dengan jumlah semua hari)
     const sumDays=days.reduce((s,x)=>s+x.omzet,0);
@@ -1088,7 +1100,7 @@ function runImport(){
   const records=[],luar=[],targets=[];
   p.months.forEach(m=>{
     const mk=y+'-'+pad(m.month),dim=new Date(y,m.month,0).getDate();
-    m.days.forEach(d=>{if(d.day<=dim)records.push({date:mk+'-'+pad(d.day),omzet:d.omzet,discount:d.discount,bonus:d.bonus,expense:d.expense,emp:d.emp});});
+    m.days.forEach(d=>{if(d.day<=dim)records.push({date:mk+'-'+pad(d.day),omzet:d.omzet,discount:d.discount,bonus:d.bonus,expense:d.expense,emp:d.emp,note:d.note||''});});
     m.luar.forEach(l=>luar.push({month:mk,amount:l.amount,discount:l.discount,bonus:l.bonus,expense:l.expense,ket:l.ket}));
     if(p.useTarget&&m.daily)targets.push({month:mk,amount:Math.round(m.daily*dim)});
   });
@@ -1097,7 +1109,7 @@ function runImport(){
   callApi('importHistoricalData',[{branch:S.branch,records:records,luar:luar,targets:targets}]).then(r=>{
     IMP=null;renderImport();
     msg.className='msg ok';
-    msg.textContent='Selesai: '+r.imported+' hari masuk'+(r.skipped?', '+r.skipped+' dilewati (sudah ada)':'')+(r.luarImported?', '+r.luarImported+' data ★':'')+(r.targetsSet?', '+r.targetsSet+' target bulan':'')+'.';
+    msg.textContent='Selesai: '+r.imported+' hari masuk'+(r.skipped?', '+r.skipped+' dilewati (sudah ada)':'')+(r.luarImported?', '+r.luarImported+' data ★':'')+(r.targetsSet?', '+r.targetsSet+' target bulan':'')+(r.notesAdded?', '+r.notesAdded+' catatan dilengkapi':'')+'.';
     S.years={};refresh();
   }).catch(e=>{msg.className='msg err';msg.textContent=e.message;b.disabled=false;b.textContent='Import ke '+S.branch;});
 }
