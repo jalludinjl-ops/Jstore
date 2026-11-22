@@ -205,19 +205,36 @@ input,select{font:inherit;color:inherit}
 .vsr{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:8px;padding:4px 0 12px}
 .vsr div{text-align:center;font-size:16px}
 
-/* kalender input */
-.calhd{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-.calhd b{font-size:15px}
-.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
-.cal .cdn{font-size:11px;color:var(--ink3);text-align:center;padding:2px 0 4px}
-.cd{height:44px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:15px;font-weight:600;color:var(--ink);background:var(--soft)}
-.cd i{width:16px;height:2px;border-radius:1px;background:transparent}
-.cd.has i{background:var(--ink)}
-.cd.tdy{box-shadow:inset 0 0 0 1.5px var(--ink)}
-.cd.on{background:var(--ink);color:#fff}
-.cd.on.has i{background:#fff}
-.cd:disabled{color:#c4c4ca;background:transparent;cursor:default}
-.cd .ic{width:17px;height:17px}
+/* kalender input: gaya titik minimalis */
+.calbox{padding:16px 14px 14px;display:flex;flex-direction:column}
+.cbig{font-size:56px;font-weight:700;line-height:.95;letter-spacing:-2px}
+.cmo{font-size:15px;font-weight:500;letter-spacing:.6px;margin-top:10px}
+.cyr{display:flex;justify-content:space-between;align-items:baseline;font-size:15px}
+.cyr span:first-child{color:var(--ink3)}
+.cnav{display:flex;gap:6px;margin:8px 0 6px -6px}
+.cnav .iconbtn{color:var(--ink)}
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));row-gap:6px;align-content:start}
+.cal .cdn{font-size:11px;color:var(--ink3);text-align:center;padding:0 0 2px}
+.cd{width:32px;height:32px;margin:0 auto;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--ink);background:transparent;box-shadow:inset 0 0 0 1.5px var(--ink);transition:transform .12s}
+.cd:active{transform:scale(.9)}
+.cd.has{background:var(--ink);color:#fff;box-shadow:none}
+.cd:disabled{box-shadow:inset 0 0 0 1.5px #d6d6db;color:#c4c4ca;cursor:default}
+.cd.on{box-shadow:0 0 0 2.5px var(--card),0 0 0 4.5px var(--ink);background:var(--ink);color:#fff}
+.cd.on:not(.has){background:var(--card);color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--ink),0 0 0 2.5px var(--card),0 0 0 4.5px var(--ink)}
+.cd.tdy:not(.on){font-weight:800;text-decoration:underline;text-underline-offset:2px}
+.cd .ic{width:14px;height:14px}
+.callg{display:flex;flex-wrap:wrap;gap:6px 12px;justify-content:center;font-size:10px;color:var(--ink3);margin-top:12px}
+.callg span{display:inline-flex;align-items:center;gap:5px}
+.callg i{width:9px;height:9px;border-radius:50%}
+.ctag{font-size:10px;letter-spacing:2.5px;color:var(--ink3);text-align:center;margin-top:auto;padding-top:14px}
+.iside{display:flex;flex-direction:column;gap:12px}
+.iform{min-width:0}
+@media (min-width:700px){
+  .iside{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:12px;align-items:stretch}
+  .calbox{height:100%}
+  .cd{width:36px;height:36px;font-size:12px}
+  .cal{flex:1;align-content:space-evenly}
+}
 .ftitle{font-size:13px;font-weight:700;text-align:center}
 .hist .hr{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px}
 .hist .hr .k{color:var(--ink2);min-width:92px}
@@ -479,7 +496,7 @@ function addOpEl(el,op){
 const S={branch:'Blok F',page:'dash',tok:0,today:'',month:'',
   dash:null,dashMode:'o',dashSel:null,recOpen:false,tgtOpen:false,starOpen:false,
   inMode:'toko',inDate:'',luarMonth:'',emp:0,empTouched:false,months:{},
-  dbMonth:null,dbEdit:false,dbSel:null,years:{},yearView:0,yMode:'o',yOpen:false,cMode:'o',cOpen:false,vsA:'',vsB:''};
+  fresh:{},formKey:'',formDirty:false,inEdit:false,dbMonth:null,dbEdit:false,dbSel:null,years:{},yearView:0,yMode:'o',yOpen:false,cMode:'o',cOpen:false,vsA:'',vsB:''};
 try{const b=localStorage.getItem('jstore_branch');if(b==='Blok F'||b==='Blok B')S.branch=b;}catch(e){}
 
 const QUOTES=[
@@ -504,8 +521,9 @@ function fitHeader(){
   if(st)h.classList.remove('stuck');
   $('hdrSp').style.height=h.offsetHeight-12+'px';
   if(st)h.classList.add('stuck');
+  onScrollHdr();
 }
-function onScrollHdr(){const h=$('hdr');if(h)h.classList.toggle('stuck',window.scrollY>6);}
+function onScrollHdr(){const h=$('hdr');if(!h)return;h.classList.toggle('stuck',window.scrollY>6);document.documentElement.style.setProperty('--hdrH',(h.offsetHeight+10)+'px');}
 window.addEventListener('scroll',onScrollHdr,{passive:true});
 window.addEventListener('resize',()=>{fitHeader();});
 function relayout(){
@@ -723,12 +741,12 @@ function saveTarget(){
 function monthOf(key){return S.months[S.branch+'|'+key.slice(0,7)];}
 function dayData(key){const m=monthOf(key);if(!m)return null;return m.days[+key.slice(8,10)-1]||null;}
 function dateLong(k){return HF[dow(k)]+', '+(+k.slice(8,10))+' '+MF[+k.slice(5,7)-1]+' '+k.slice(0,4);}
+function dayHasData(x){return !!(x&&(x.has||x.discount||x.bonus||x.expense||x.emp||x.note));}
+function isFresh(key){return !!S.fresh[S.branch+'|'+key.slice(0,7)];}
 
 function buildInput(){
   const toko=S.inMode==='toko';
-  const W=WIDE();
-  const cal='<div class="card bd" id="calCard"></div>';
-  const hist='<div class="card bd hist" id="histCard"></div>';
+  S.formKey='';S.formDirty=false;
   const form=
   '<div class="tabs"><button class="'+(toko?'on':'')+'" onclick="setInMode(\'toko\')" aria-label="Toko">'+ic('store')+'</button>'+
     '<button class="'+(toko?'':'on')+'" onclick="setInMode(\'luar\')" aria-label="Luar toko">'+ic('star')+'</button></div>'+
@@ -744,7 +762,7 @@ function buildInput(){
     '<label class="fld"><small>Pengeluaran</small><input id="inExp" inputmode="decimal" value="0" enterkeyhint="'+(toko?'next':'done')+'"></label>'+
     (toko?'<div class="fld"><small>Emp</small><div class="stp"><button onclick="stepEmp(-1)" aria-label="Kurangi">−</button><b id="empV">'+S.emp+'</b><button onclick="stepEmp(1)" aria-label="Tambah">+</button></div></div>':'')+
   '</div>'+
-  (toko?'<label class="fld"><small>'+ic('edit')+' Catatan <span style="color:var(--ink3)">(opsional)</span></small><input id="inNote" maxlength="200" placeholder="Contoh: hujan, toko sepi" enterkeyhint="done"></label>':'')+
+  (toko?'<label class="fld"><small>'+ic('edit')+' Catatan <span style="color:var(--ink3)">(opsional)</span></small><input id="inNote" maxlength="300" placeholder="Contoh: hujan, toko sepi" enterkeyhint="done"></label>':'')+
   '<div class="card bd prev">'+
     '<div class="lbl" style="margin-bottom:8px">'+ic('eye')+' Pratinjau</div>'+
     '<div class="r"><span>Profit (35%)</span><span id="pvPro">Rp0</span></div>'+
@@ -752,12 +770,15 @@ function buildInput(){
     '<div class="t"><span>Net profit</span><span id="pvNet">Rp0</span></div>'+
     (toko?'<div class="prog" style="height:6px;margin:6px 0 4px"><div id="pvBar" style="width:0%"></div></div><div class="sub" id="pvAch"></div>':'')+
   '</div>'+
-  '<button class="btn" id="saveBtn" onclick="saveInput()">SIMPAN</button>'+
-  '<div class="msg" id="inMsg"></div>';
+  '<div style="display:flex;gap:8px"><button class="btn2 danger hide" id="delDayBtn" style="width:auto;padding:0 16px;white-space:nowrap;flex-shrink:0" onclick="delDayInput()">'+ic('trash')+' Hapus hari</button>'+
+  '<button class="btn" id="saveBtn" onclick="saveInput()">SIMPAN</button></div>'+
+  '<div class="msg" id="inMsg"></div>'+
+  (toko?'':'<div class="card bd hist" id="histCard"></div>');
 
-  $('pInput').innerHTML='<div class="cols">'+form.replace('<div class="ftitle" id="dayLabel"></div>',cal+'<div class="ftitle" id="dayLabel"></div>')+hist+'</div>';
+  $('pInput').innerHTML='<div class="iside"><div class="card bd calbox" id="calCard"></div><div class="cols iform">'+form+'</div></div>';
 
-  ['inOmz','inDis','inBon','inExp'].forEach(id=>bindNum($(id),updatePreview,id==='inOmz'));
+  ['inOmz','inDis','inBon','inExp'].forEach(id=>bindNum($(id),()=>{S.formDirty=true;updatePreview();},id==='inOmz'));
+  if($('inNote'))$('inNote').addEventListener('input',()=>{S.formDirty=true;});
   const order=toko?['inOmz','inDis','inBon','inExp','inNote']:['inOmz','inKet','inDis','inBon','inExp'];
   order.forEach((id,i)=>$(id).addEventListener('keydown',e=>{
     if(e.key!=='Enter')return;e.preventDefault();
@@ -774,9 +795,10 @@ function setInMode(m){
 function goToday(){S.inMode='toko';S.inDate=S.today;S.calMonth=S.today.slice(0,7);S.inEdit=false;S.empTouched=false;buildInput();refresh();}
 function selectDay(k){
   if(k>S.today)return;
+  if(S.formDirty&&S.inMode==='toko'&&k!==S.inDate&&!confirm('Perubahan di tanggal ini belum disimpan. Pindah tanggal?'))return;
   const modeChange=S.inMode!=='toko';
   S.inMode='toko';S.inDate=k;S.inEdit=false;S.empTouched=false;
-  if(modeChange)buildInput();else updateInputData();
+  if(modeChange)buildInput();else{S.formKey='';S.formDirty=false;updateInputData();}
   loadInputData(S.tok);
 }
 function selectStar(){S.inMode='luar';S.luarMonth=S.calMonth;S.inEdit=false;buildInput();loadInputData(S.tok);}
@@ -786,11 +808,14 @@ function calNav(d){
   if(S.inMode==='luar'){S.luarMonth=m;}
   updateInputData();loadInputData(S.tok);
 }
-function stepEmp(d){S.emp=Math.max(0,S.emp+d);S.empTouched=true;$('empV').textContent=S.emp;}
+function stepEmp(d){S.emp=Math.max(0,S.emp+d);S.empTouched=true;S.formDirty=true;$('empV').textContent=S.emp;}
 
 function loadInputData(tok){
   const months=[...new Set([S.calMonth,S.inDate.slice(0,7),S.luarMonth])];
-  months.forEach(m=>load('getMonth',[S.branch,m],d=>{S.months[S.branch+'|'+m]=d;if(tok===S.tok&&S.page==='input')updateInputData();}));
+  months.forEach(m=>load('getMonth',[S.branch,m],(d,cached)=>{
+    const k=S.branch+'|'+m;S.months[k]=d;if(!cached)S.fresh[k]=true;
+    if(tok===S.tok&&S.page==='input'){if(!cached&&!S.formDirty)S.formKey='';updateInputData();}
+  }));
 }
 
 function updatePreview(){
@@ -807,75 +832,75 @@ function updatePreview(){
 
 function renderCal(){
   const el=$('calCard');if(!el)return;
-  const mk=S.calMonth,m=monthOf(mk+'-01'),W=WIDE();
+  const mk=S.calMonth,m=monthOf(mk+'-01');
   const y=+mk.slice(0,4),mo=+mk.slice(5,7),dim=new Date(y,mo,0).getDate();
   const first=(new Date(y,mo-1,1).getDay()+6)%7; // Senin = 0
-  const names=W?['Senin','Selasa','Rabu','Kamis','Jumat','Sabtu','Minggu']:['Sen','Sel','Rab','Kam','Jum','Sab','Min'];
-  let h=names.map(n=>'<div class="cdn">'+n+'</div>').join('')+'<div></div>'.repeat(first);
+  let h=['S','S','R','K','J','S','M'].map(n=>'<div class="cdn">'+n+'</div>').join('')+'<div></div>'.repeat(first);
   for(let d=1;d<=dim;d++){
     const k=mk+'-'+String(d).padStart(2,'0'),x=m?m.days[d-1]:null;
     const on=S.inMode==='toko'&&k===S.inDate;
-    h+='<button class="cd'+(x&&x.has?' has':'')+(k===S.today?' tdy':'')+(on?' on':'')+'"'+(k>S.today?' disabled':'')+' onclick="selectDay(\''+k+'\')" aria-label="'+dateLong(k)+'">'+d+'<i></i></button>';
+    h+='<button class="cd'+(dayHasData(x)?' has':'')+(k===S.today?' tdy':'')+(on?' on':'')+'"'+(k>S.today?' disabled':'')+' onclick="selectDay(\''+k+'\')" aria-label="'+dateLong(k)+'">'+d+'</button>';
   }
   const lc=m&&m.luar?m.luar.count:0;
-  h+='<button class="cd'+(lc?' has':'')+(S.inMode==='luar'?' on':'')+'" onclick="selectStar()" aria-label="Pemasukan luar toko">'+ic('star')+'<i></i></button>';
+  h+='<button class="cd'+(lc?' has':'')+(S.inMode==='luar'?' on':'')+'" onclick="selectStar()" aria-label="Pemasukan luar toko">'+ic('star')+'</button>';
   const canNext=shiftMonth(mk,1)<=S.today.slice(0,7);
-  el.innerHTML='<div class="calhd"><button class="iconbtn" onclick="calNav(-1)" aria-label="Bulan sebelumnya">'+ic('left')+'</button><b>'+mLong(mk)+'</b>'+
-    '<button class="iconbtn" onclick="calNav(1)" aria-label="Bulan berikutnya"'+(canNext?'':' style="visibility:hidden"')+'>'+ic('right')+'</button></div>'+
+  const toko=S.inMode==='toko',sel=toko&&S.inDate.slice(0,7)===mk;
+  el.innerHTML=
+    '<div class="cbig">'+(toko?(sel?+S.inDate.slice(8,10):'–'):ic('star'))+'</div>'+
+    '<div class="cmo">'+MF[mo-1].toUpperCase()+'</div>'+
+    '<div class="cyr"><span>'+y+'</span><span>'+(toko&&sel?HF[dow(S.inDate)]:(toko?'':'Luar toko'))+'</span></div>'+
+    '<div class="cnav"><button class="iconbtn" onclick="calNav(-1)" aria-label="Bulan sebelumnya">'+ic('left')+'</button>'+
+    '<button class="iconbtn" onclick="calNav(1)" aria-label="Bulan berikutnya"'+(canNext?'':' style="opacity:.25;pointer-events:none"')+'>'+ic('right')+'</button></div>'+
     '<div class="cal">'+h+'</div>'+
-    '<div class="sub" style="margin-top:8px;display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:14px;height:2px;background:var(--ink)"></span> sudah diinput</div>';
+    '<div class="callg"><span><i style="background:var(--ink)"></i>sudah diinput</span><span><i style="box-shadow:inset 0 0 0 1.5px var(--ink)"></i>belum</span><span><i style="box-shadow:0 0 0 1.5px var(--card),0 0 0 3px var(--ink);width:7px;height:7px;margin:1px"></i>dipilih</span></div>'+
+    '<div class="ctag">SEDIKIT TAPI BERARTI</div>';
+}
+
+// tanggal yang sudah ada datanya: isi form dengan datanya supaya bisa diedit langsung
+function fillForm(){
+  const k=S.inDate,x=dayData(k);
+  S.formKey=k;S.formDirty=false;S.empTouched=false;
+  const inc=x&&x.incomes?x.incomes:[];
+  const total=inc.reduce((t,i)=>t+i.amount,0);
+  const f=inc.length>1?inc.map(i=>i.f||fmtIn(i.amount)).join(' + '):(inc[0]&&inc[0].f)||'';
+  const o=$('inOmz');o.value=f||fmtIn(total)||'0';o.dataset.f=f;
+  setNum($('inDis'),x?x.discount:0,x?x.discountF:'');setNum($('inBon'),x?x.bonus:0,x?x.bonusF:'');setNum($('inExp'),x?x.expense:0,x?x.expenseF:'');
+  if($('inNote'))$('inNote').value=x&&x.note?x.note:'';
+  S.emp=x?x.emp||0:0;if($('empV'))$('empV').textContent=S.emp;
+  updatePreview();
 }
 
 function histRow(k,v,act){return '<div class="hr"><span class="k">'+k+'</span><span class="v">'+v+'</span>'+(act||'')+'</div>';}
+// riwayat luar toko (★): bisa diisi berkali-kali, jadi tetap berupa daftar
 function renderHist(){
   const el=$('histCard');if(!el)return;
-  const ed='<button class="iconbtn" onclick="openInEdit()" aria-label="Edit">'+ic('edit')+'</button>';
-  if(S.inMode==='toko'){
-    const k=S.inDate,m=monthOf(k),x=dayData(k);
-    if(S.inEdit&&m&&x){el.innerHTML='<div class="ftitle" style="text-align:left;margin-bottom:4px">Edit · '+dateLong(k)+'</div>'+dayEditorHTML(x,m,'in');bindDayEditor(el.querySelector('.panel'),x);return;}
-    let h='<div class="hd" style="margin-bottom:2px"><span style="font-size:14px;font-weight:700">Riwayat · '+dateLong(k)+'</span>'+(x?'<button class="ebtn" onclick="openInEdit()">'+ic('edit')+' Edit</button>':'')+'</div>';
-    if(!m){el.innerHTML=h+'<div class="sub" style="padding:8px 0">Memuat data...</div>';return;}
-    const hasAdj=x&&(x.discount||x.bonus||x.expense||x.emp||x.note);
-    if(!x||(!x.has&&!hasAdj)){el.innerHTML=h+'<div class="sub" style="padding:8px 0">Belum ada input di tanggal ini.</div>';return;}
-    (x.incomes||[]).forEach((it,i)=>{
-      h+=histRow('Omzet '+(i+1),'<b>'+rp(it.amount)+'</b>'+(it.f?' <span class="sub">('+esc(it.f)+')</span>':''),
-        '<button class="iconbtn" onclick="openInEdit('+i+')" aria-label="Edit omzet">'+ic('edit')+'</button><button class="iconbtn red" onclick="delIncome(\''+it.id+'\')" aria-label="Hapus omzet">'+ic('trash')+'</button>');
-    });
-    const fx=(v,f)=>rp(v)+(f?' <span class="sub">('+esc(f)+')</span>':'');
-    h+=histRow('Diskon',fx(x.discount,x.discountF),ed)+histRow('Bonus',fx(x.bonus,x.bonusF),ed)+histRow('Pengeluaran',fx(x.expense,x.expenseF),ed)+
-       histRow('Emp',String(x.emp||0),ed)+histRow('Catatan',x.note?esc(x.note):'<span class="sub">—</span>',ed);
-    h+='<div class="tot2"><span>Omzet '+rp(x.omzet||0)+'</span><span>Net profit '+rp(x.net||0)+'</span></div>';
-    el.innerHTML=h;
-  }else{
-    const m=monthOf(S.luarMonth+'-01');
-    let h='<div class="hd" style="margin-bottom:2px"><span style="font-size:14px;font-weight:700">'+ic('star')+' Riwayat luar toko · '+mLong(S.luarMonth)+'</span></div>';
-    if(!m){el.innerHTML=h+'<div class="sub" style="padding:8px 0">Memuat data...</div>';return;}
-    if(S.inEdit){el.innerHTML='<div class="ftitle" style="text-align:left;margin-bottom:4px">'+ic('star')+' Edit luar toko · '+mLong(S.luarMonth)+'</div>'+luarEditorHTML(m,'in');bindLuarEditor(el);return;}
-    const L=m.luar;
-    if(!L.entries.length){el.innerHTML=h+'<div class="sub" style="padding:8px 0">Belum ada pemasukan luar toko bulan ini.</div>';return;}
-    L.entries.forEach((e,i)=>{
-      h+=histRow(esc(e.ket||'Tanpa keterangan'),'<b>'+rp(e.amount)+'</b>'+((e.discount||e.bonus||e.expense)?'<div class="sub">Diskon '+rp(e.discount)+' · Bonus '+rp(e.bonus)+' · Pengeluaran '+rp(e.expense)+'</div>':''),
-        '<button class="iconbtn" onclick="openInEdit()" aria-label="Edit">'+ic('edit')+'</button><button class="iconbtn red" onclick="delLuar(this,\''+e.id+'\',\'in\')" aria-label="Hapus">'+ic('trash')+'</button>');
-    });
-    h+='<div class="tot2"><span>Total '+rp(L.omzet)+'</span><span>Net profit '+rp(L.net)+'</span></div>';
-    el.innerHTML=h;
-  }
+  const m=monthOf(S.luarMonth+'-01');
+  let h='<div class="hd" style="margin-bottom:2px"><span style="font-size:14px;font-weight:700">'+ic('star')+' Riwayat luar toko · '+mLong(S.luarMonth)+'</span></div>';
+  if(!m){el.innerHTML=h+'<div class="sub" style="padding:8px 0">Memuat data...</div>';return;}
+  if(S.inEdit){el.innerHTML='<div class="ftitle" style="text-align:left;margin-bottom:4px">'+ic('star')+' Edit luar toko · '+mLong(S.luarMonth)+'</div>'+luarEditorHTML(m,'in');bindLuarEditor(el);return;}
+  const L=m.luar;
+  if(!L.entries.length){el.innerHTML=h+'<div class="sub" style="padding:8px 0">Belum ada pemasukan luar toko bulan ini.</div>';return;}
+  L.entries.forEach(e=>{
+    h+=histRow(esc(e.ket||'Tanpa keterangan'),'<b>'+rp(e.amount)+'</b>'+((e.discount||e.bonus||e.expense)?'<div class="sub">Diskon '+rp(e.discount)+' · Bonus '+rp(e.bonus)+' · Pengeluaran '+rp(e.expense)+'</div>':''),
+      '<button class="iconbtn" onclick="openInEdit()" aria-label="Edit">'+ic('edit')+'</button><button class="iconbtn red" onclick="delLuar(this,\''+e.id+'\',\'in\')" aria-label="Hapus">'+ic('trash')+'</button>');
+  });
+  h+='<div class="tot2"><span>Total '+rp(L.omzet)+'</span><span>Net profit '+rp(L.net)+'</span></div>';
+  el.innerHTML=h;
 }
-function openInEdit(focusIdx){
-  S.inEdit=true;renderHist();
-  const el=$('histCard');
-  const t=focusIdx!=null?el.querySelectorAll('.trxList input')[focusIdx]:null;
-  el.scrollIntoView({behavior:'smooth',block:'nearest'});
-  if(t)setTimeout(()=>t.focus(),50);
-}
+function openInEdit(){S.inEdit=true;renderHist();}
 
 function updateInputData(){
   if(!$('calCard'))return;
-  renderCal();renderHist();
-  $('dayLabel').innerHTML=S.inMode==='toko'?'Tambah input · '+dateLong(S.inDate)+(S.inDate===S.today?' · hari ini':''):ic('star')+' Tambah luar toko · '+mLong(S.luarMonth);
+  renderCal();
   if(S.inMode==='toko'){
-    const x=dayData(S.inDate);
-    if(!S.empTouched){S.emp=x?x.emp||0:0;if($('empV'))$('empV').textContent=S.emp;}
+    const x=dayData(S.inDate),ex=dayHasData(x);
+    if(S.formKey!==S.inDate&&monthOf(S.inDate))fillForm();
+    $('dayLabel').innerHTML=dateLong(S.inDate)+(S.inDate===S.today?' · hari ini':'')+(ex?' · <span style="color:var(--green)">sudah ada data</span>':'');
+    $('saveBtn').textContent=ex?'SIMPAN PERUBAHAN':'SIMPAN';
+    $('delDayBtn').classList.toggle('hide',!ex);
+  }else{
+    $('dayLabel').innerHTML=ic('star')+' Tambah luar toko · '+mLong(S.luarMonth);
+    renderHist();
   }
   updatePreview();
 }
@@ -887,30 +912,33 @@ function saveInput(){
   const amt=parseAmount($('inOmz').value),dis=parseAmount($('inDis').value),bon=parseAmount($('inBon').value),exp=parseAmount($('inExp').value);
   let action,args;
   if(S.inMode==='toko'){
-    const x=dayData(S.inDate);
-    const empChanged=S.empTouched&&(!x||S.emp!==(x.emp||0));
+    if(!isFresh(S.inDate)){inMsg('Tunggu sebentar, data terbaru sedang dimuat...');loadInputData(S.tok);return;}
+    const x=dayData(S.inDate),ex=dayHasData(x);
     const note=($('inNote')?$('inNote').value:'').trim();
-    if(!amt&&!dis&&!bon&&!exp&&!empChanged&&!note){inMsg('Masukkan nominal terlebih dahulu.');return;}
-    action='saveDaily';args=[{branch:S.branch,date:S.inDate,amount:amt,discount:dis,bonus:bon,expense:exp,emp:S.empTouched?S.emp:null,note:note,
-      amountF:fOf($('inOmz')),discountF:fOf($('inDis')),bonusF:fOf($('inBon')),expenseF:fOf($('inExp'))}];
+    if(!ex&&!amt&&!dis&&!bon&&!exp&&!S.emp&&!note){inMsg('Masukkan nominal terlebih dahulu.');return;}
+    // isi form = isi tanggal ini (omzet jadi satu transaksi, rinciannya tersimpan di rumus)
+    const inc=x&&x.incomes?x.incomes:[];
+    const f=fOf($('inOmz'));
+    action='updateDay';args=[{branch:S.branch,date:S.inDate,incomes:amt?[{id:inc[0]?inc[0].id:'',amount:amt,f:f}]:[],discount:dis,bonus:bon,expense:exp,emp:S.emp,note:note,
+      discountF:fOf($('inDis')),bonusF:fOf($('inBon')),expenseF:fOf($('inExp'))}];
   }else{
     if(!amt){inMsg('Isi nominal luar toko terlebih dahulu.');return;}
     action='addLuar';args=[{branch:S.branch,month:S.luarMonth,ket:$('inKet').value.trim(),amount:amt,discount:dis,bonus:bon,expense:exp}];
   }
+  const label=btn.textContent;
   btn.disabled=true;btn.textContent='MENYIMPAN...';
   callApi(action,args).then(()=>{
-    ['inOmz','inDis','inBon','inExp'].forEach(id=>{$(id).value='0';$(id).dataset.f='';$(id).classList.remove('expr');});
-    if($('inKet'))$('inKet').value='';
-    if($('inNote'))$('inNote').value='';
-    S.empTouched=false;
-    updatePreview();inMsg('✓ Tersimpan',true);
-    $('inOmz').focus();
+    if(S.inMode==='luar'){
+      ['inOmz','inDis','inBon','inExp'].forEach(id=>{$(id).value='0';$(id).dataset.f='';$(id).classList.remove('expr');});
+      $('inKet').value='';updatePreview();
+    }else{S.formDirty=false;S.formKey='';}
+    inMsg('✓ Tersimpan',true);
     loadInputData(S.tok);
-  }).catch(e=>inMsg(e.message)).finally(()=>{btn.disabled=false;btn.textContent='SIMPAN';});
+  }).catch(e=>inMsg(e.message)).finally(()=>{btn.disabled=false;btn.textContent=label;});
 }
-function delIncome(id){
-  if(!confirm('Hapus omzet ini?'))return;
-  callApi('deleteIncome',[id]).then(()=>{inMsg('✓ Omzet dihapus',true);loadInputData(S.tok);}).catch(e=>alert(e.message));
+function delDayInput(){
+  if(!confirm('Hapus semua data '+dateLong(S.inDate)+'?'))return;
+  callApi('deleteDay',[S.branch,S.inDate]).then(()=>{S.formDirty=false;S.formKey='';inMsg('✓ Data tanggal ini dihapus',true);loadInputData(S.tok);}).catch(e=>alert(e.message));
 }
 
 // =====================================================
