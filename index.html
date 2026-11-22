@@ -228,17 +228,13 @@ input,select{font:inherit;color:inherit}
 
 /* iPad landscape: lebih lebar, 2 kolom */
 @media (min-width:1000px) and (orientation:landscape){
-  body{padding-left:24px;padding-right:24px}
-  .app{max-width:none}
-  .hdr{padding-left:24px;padding-right:24px}
-  .hin{max-width:none}
-  .wgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:14px;align-items:start}
-  .igrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}
-  .tt{font-size:13px}
-  .tt .s1{width:70px;min-width:70px;max-width:70px}
-  .tt .s2{left:70px;width:84px;min-width:84px;max-width:84px;font-size:12px}
-  .cd{height:52px;font-size:17px}
-  .cal .cdn{font-size:12px}
+  body.pdb{padding-left:24px;padding-right:24px}
+  body.pdb .app{max-width:none}
+  body.pdb .hdr{padding-left:24px;padding-right:24px}
+  body.pdb .hin{max-width:none}
+  body.pdb .tt{font-size:13px}
+  body.pdb .tt .s1{width:70px;min-width:70px;max-width:70px}
+  body.pdb .tt .s2{left:70px;width:84px;min-width:84px;max-width:84px;font-size:12px}
 }
 
 /* status & kunci */
@@ -425,7 +421,8 @@ const HS=['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
 const HF=['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
 // iPad landscape: tampilan lebar, label ditulis lengkap
 const WMQ=window.matchMedia?window.matchMedia('(min-width:1000px) and (orientation:landscape)'):null;
-const WIDE=()=>!!(WMQ&&WMQ.matches);
+// tampilan lebar hanya untuk halaman Database
+const WIDE=()=>!!(WMQ&&WMQ.matches)&&typeof S!=='undefined'&&S.page==='db';
 const mLabel=m=>(WIDE()?MF:MN)[+m.slice(5,7)-1]+' '+m.slice(0,4);
 const mLong=m=>MF[+m.slice(5,7)-1]+' '+m.slice(0,4);
 function shiftMonth(m,d){const y=+m.slice(0,4),mo=+m.slice(5,7)-1+d;const dt=new Date(y,mo,1);return dt.getFullYear()+'-'+String(dt.getMonth()+1).padStart(2,'0');}
@@ -530,6 +527,7 @@ function go(p){
     $({dash:'nDash',input:'nInput',db:'nDb'}[x]).classList.toggle('on',x===p);
   });
   $('quote').classList.toggle('hide',p!=='dash');
+  document.body.classList.toggle('pdb',p==='db');
   fitHeader();
   if(p==='input')buildInput();
   refresh();
@@ -757,9 +755,7 @@ function buildInput(){
   '<button class="btn" id="saveBtn" onclick="saveInput()">SIMPAN</button>'+
   '<div class="msg" id="inMsg"></div>';
 
-  $('pInput').innerHTML=W?
-    '<div class="igrid"><div class="cols">'+cal+hist+'</div><div class="cols">'+form+'</div></div>':
-    '<div class="cols">'+cal+hist+form+'</div>';
+  $('pInput').innerHTML='<div class="cols">'+form.replace('<div class="ftitle" id="dayLabel"></div>',cal+'<div class="ftitle" id="dayLabel"></div>')+hist+'</div>';
 
   ['inOmz','inDis','inBon','inExp'].forEach(id=>bindNum($(id),updatePreview,id==='inOmz'));
   const order=toko?['inOmz','inDis','inBon','inExp','inNote']:['inOmz','inKet','inDis','inBon','inExp'];
