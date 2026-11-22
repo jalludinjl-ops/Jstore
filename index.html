@@ -272,6 +272,7 @@ input,select{font:inherit;color:inherit}
 
 /* status & kunci */
 .status{background:var(--redbg);color:var(--red);border-radius:12px;padding:11px 13px;font-size:13px}
+.status.info{background:var(--card);color:var(--ink2);box-shadow:var(--sh)}
 .link{display:block;margin:6px auto 0;font-size:12px;color:var(--ink2);text-decoration:underline}
 
 /* menu bawah */
@@ -380,13 +381,16 @@ function saveApiKey(){
   $('keyInput').value='';$('keyBox').classList.add('hide');showStatus('');refresh();
 }
 function resetApiKey(){try{localStorage.removeItem('jstore_api_key');sessionStorage.removeItem('jstore_api_key');}catch(e){}showKeyBox('');window.scrollTo({top:0,behavior:'smooth'});}
-function showStatus(t){const el=$('statusBar');el.textContent=t;el.classList.toggle('hide',!t);}
+function showStatus(t,info){const el=$('statusBar');el.textContent=t;el.classList.toggle('hide',!t);el.classList.toggle('info',!!info);}
 
 function callApi(action,args){
   const key=getApiKey();
   if(!key){showKeyBox('');return Promise.reject(new Error('Masukkan kunci akses dulu.'));}
-  return fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:action,args:args||[],key:key})})
-    .catch(()=>{throw new Error('Tidak bisa terhubung ke server. Cek internet.');})
+  const ac=window.AbortController?new AbortController():null;
+  const to=ac?setTimeout(()=>ac.abort(),40000):0;
+  return fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:action,args:args||[],key:key}),signal:ac?ac.signal:undefined})
+    .catch(e=>{throw new Error(e&&e.name==='AbortError'?'Server terlalu lama merespons. Tarik ke bawah / muat ulang halaman.':'Tidak bisa terhubung ke server. Cek internet.');})
+    .finally(()=>clearTimeout(to))
     .then(r=>r.text())
     .then(t=>{
       let r;try{r=JSON.parse(t);}catch(e){throw new Error('Server tidak membalas JSON. Pastikan Code.gs terbaru sudah di-Deploy (New version).');}
@@ -404,7 +408,9 @@ function ck(a,args){return 'jst2:'+a+':'+JSON.stringify(args);}
 function getCached(a,args){const k=ck(a,args);if(MEM[k])return MEM[k];try{const v=JSON.parse(localStorage.getItem(k)||'null');if(v)MEM[k]=v;return v;}catch(e){return null;}}
 function setCached(a,args,v){const k=ck(a,args);MEM[k]=v;try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
 function load(a,args,cb){
-  const c=getCached(a,args);if(c)cb(c,true);
+  const c=getCached(a,args);
+  if(c){try{cb(c,true);}catch(e){showStatus('⚠️ Error tampilan: '+e.message);}}
+  else if(getApiKey())showStatus('⏳ Memuat data dari server...',true);
   return callApi(a,args).then(d=>{setCached(a,args,d);showStatus('');cb(d,false);return d;})
     .catch(e=>{if(e.message!=='Masukkan kunci akses dulu.')showStatus('⚠️ '+e.message);});
 }
