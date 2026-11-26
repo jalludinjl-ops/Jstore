@@ -337,11 +337,13 @@ input,select{font:inherit;color:inherit}
 .aicp .ic{width:14px;height:14px}
 
 /* saran kata */
-.sugdd{position:absolute;z-index:80;background:#fff;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.16);overflow:hidden;max-width:calc(100vw - 20px)}
-.sugdd button{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;padding:10px 12px;font-size:14px;color:var(--ink);text-align:left;border-bottom:1px solid var(--line)}
-.sugdd button:last-child{border-bottom:0}
-.sugdd button b{font-weight:800}
-.sugdd small{font-size:11px;color:var(--ink3)}
+.sugdd{position:absolute;left:0;top:calc(100% + 4px);z-index:80;width:max(100%,240px);max-width:calc(100vw - 20px);background:#fff;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.16);overflow:hidden;text-align:left}
+.sgr{position:relative;display:flex;align-items:center;border-bottom:1px solid var(--line)}
+.sgr:last-child{border-bottom:0}
+.sgr.on{background:var(--soft)}
+.sgr.on::before{content:"";position:absolute;left:0;top:6px;bottom:6px;width:3px;border-radius:2px;background:var(--ink)}
+.sgi{flex:1;min-width:0;border:0;background:transparent;font:inherit;font-size:14px;font-weight:500;color:var(--ink);padding:10px 12px;outline:none;caret-color:transparent;cursor:pointer}
+.sgr small{font-size:11px;color:var(--ink3);padding-right:12px}
 
 /* status & kunci */
 .status{background:var(--redbg);color:var(--red);border-radius:12px;padding:11px 13px;font-size:13px}
@@ -1098,37 +1100,51 @@ function wordBank(kind){
   }
   return Object.values(cnt).sort((a,b)=>b.n-a.n||a.w.localeCompare(b.w));
 }
-function sugBox(){let d=$('sugDd');if(!d){d=document.createElement('div');d.id='sugDd';d.className='sugdd hide';document.body.appendChild(d);}return d;}
 function eatClick(){const f=e=>{e.preventDefault();e.stopPropagation();};document.addEventListener('click',f,true);setTimeout(()=>document.removeEventListener('click',f,true),450);}
-function sugHide(){const d=$('sugDd');if(d)d.classList.add('hide');}
-// pasang saran di sebuah kolom teks
+// Saran tampil tepat setelah kolom (urutan di halaman), jadi tombol ˅ / ˄ di atas
+// keyboard iPad (dan panah ↓ ↑ di keyboard fisik) bisa pindah ke saran. Enter = pilih.
 function attachSuggest(el,kind,onPick,showEmpty){
   if(!el)return;
+  const host=el.parentNode;if(getComputedStyle(host).position==='static')host.style.position='relative';
+  const dd=document.createElement('div');dd.className='sugdd hide';el.insertAdjacentElement('afterend',dd);
+  let list=[];
+  const hide=()=>dd.classList.add('hide');
+  const inside=()=>dd.contains(document.activeElement)||document.activeElement===el;
+  const pick=i=>{
+    el.value=list[i].w;hide();
+    el.dispatchEvent(new Event('input',{bubbles:true}));hide();
+    if(document.activeElement!==el)el.dispatchEvent(new Event('blur'));  // simpan perubahan nama (kolom sudah tidak fokus)
+    if(onPick)onPick();else el.focus();
+  };
   const show=()=>{
     const q=el.value.trim().toLowerCase();
-    if(!q&&!showEmpty){sugHide();return;}
-    const list=wordBank(kind).filter(x=>x.w.toLowerCase()!==q&&(!q||x.w.toLowerCase().indexOf(q)>=0)).slice(0,5);
-    const d=sugBox();
-    if(!list.length){sugHide();return;}
-    d.innerHTML=list.map((x,i)=>{
-      const lw=x.w.toLowerCase(),j=q?lw.indexOf(q):-1;
-      const lab=j>=0?esc(x.w.slice(0,j))+'<b>'+esc(x.w.slice(j,j+q.length))+'</b>'+esc(x.w.slice(j+q.length)):esc(x.w);
-      return '<button type="button" data-i="'+i+'"><span>'+lab+'</span><small>'+x.n+'×</small></button>';
-    }).join('');
-    d.querySelectorAll('button').forEach(b=>{
-      const pick=e=>{e.preventDefault();eatClick();el.value=list[+b.dataset.i].w;sugHide();el.dispatchEvent(new Event('input',{bubbles:true}));if(onPick)onPick();};
-      b.addEventListener('pointerdown',pick);b.addEventListener('mousedown',e=>e.preventDefault());
+    if(!q&&!showEmpty){hide();return;}
+    list=wordBank(kind).filter(x=>x.w.toLowerCase()!==q&&(!q||x.w.toLowerCase().indexOf(q)>=0)).slice(0,5);
+    if(!list.length){hide();return;}
+    dd.innerHTML=list.map((x,i)=>'<div class="sgr"><input class="sgi" data-i="'+i+'" value="'+esc(x.w)+'" enterkeyhint="done" autocomplete="off" aria-label="Saran: '+esc(x.w)+'"><small>'+x.n+'×</small></div>').join('');
+    dd.querySelectorAll('.sgi').forEach(inp=>{
+      const i=+inp.dataset.i;
+      inp.addEventListener('beforeinput',e=>e.preventDefault());
+      inp.addEventListener('focus',()=>{inp.parentNode.classList.add('on');try{inp.setSelectionRange(inp.value.length,inp.value.length);}catch(e){}});
+      inp.addEventListener('blur',()=>{inp.parentNode.classList.remove('on');setTimeout(()=>{if(!inside())hide();},120);});
+      inp.addEventListener('keydown',e=>{
+        if(e.key==='Enter'||e.key==='Tab'&&false){e.preventDefault();pick(i);}
+        else if(e.key==='ArrowDown'){e.preventDefault();const n=dd.querySelector('.sgi[data-i="'+(i+1)+'"]');if(n)n.focus();}
+        else if(e.key==='ArrowUp'){e.preventDefault();const n=dd.querySelector('.sgi[data-i="'+(i-1)+'"]');(n||el).focus();}
+        else if(e.key==='Escape'){hide();el.focus();}
+      });
+      inp.addEventListener('pointerup',e=>{e.preventDefault();eatClick();pick(i);});
     });
-    const r=el.getBoundingClientRect();
-    d.style.left=(r.left+window.scrollX)+'px';d.style.top=(r.bottom+window.scrollY+4)+'px';d.style.width=Math.max(r.width,220)+'px';
-    d.classList.remove('hide');
+    dd.classList.remove('hide');
   };
   el.setAttribute('autocomplete','off');
   el.addEventListener('input',show);el.addEventListener('focus',show);
-  el.addEventListener('blur',()=>setTimeout(sugHide,150));
-  el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key==='Escape')sugHide();});
+  el.addEventListener('blur',()=>setTimeout(()=>{if(!inside())hide();},150));
+  el.addEventListener('keydown',e=>{
+    if(e.key==='ArrowDown'&&!dd.classList.contains('hide')){e.preventDefault();const f=dd.querySelector('.sgi');if(f)f.focus();}
+    else if(e.key==='Enter'||e.key==='Escape')hide();
+  });
 }
-window.addEventListener('scroll',()=>{const d=$('sugDd');if(d&&!d.classList.contains('hide')&&!(document.activeElement&&document.activeElement.tagName==='INPUT'))sugHide();},{passive:true});
 
 // =====================================================
 // HALAMAN 2: INPUT
@@ -1417,9 +1433,9 @@ function renderBel(){
   const b=belData();
   let h='';
   // baris kosong untuk input baru (selalu di paling atas)
-  const nd=S.belNew.date&&S.belNew.date.slice(0,7)===mk?S.belNew.date:belNewDate();
-  const maxD=S.today.slice(0,7)===mk?S.today:nd;
-  h+='<tr class="bnew"><td><input type="date" class="bdate" id="bnDate" value="'+nd+'" min="'+mk+'-01" max="'+maxD+'" onchange="S.belNew.date=this.value"></td>'+
+  // tanggal input tetap (tidak balik ke hari ini) sampai 1 menit tanpa aktivitas
+  const nd=S.belNew.date||belNewDate();
+  h+='<tr class="bnew"><td><input type="date" class="bdate" id="bnDate" value="'+nd+'" max="'+S.today+'" onchange="belPickDate(this.value)"></td>'+
      '<td><input class="bc" id="bnName" placeholder="Ketik nama barang..." enterkeyhint="next" maxlength="150"></td>'+
      '<td><div class="bnum'+(S.belNew.bon?' bonv':'')+'"><span>Rp</span><input class="bc" id="bnAmt" inputmode="decimal" placeholder="0" enterkeyhint="done"></div></td>'+
      '<td><div class="bst"><button class="'+(S.belNew.bon?'red':'')+'" onclick="belNewTog(\'bon\')">Bon</button><button class="'+(S.belNew.done?'grn':'')+'" onclick="belNewTog(\'done\')">Done</button></div></td></tr>';
@@ -1453,7 +1469,7 @@ function renderBel(){
   tb.querySelectorAll('tr[data-id]').forEach(tr=>{
     const id=tr.dataset.id,n=tr.querySelector('.bn'),v=tr.querySelector('.bv');
     bindNum(v,null,true);
-    n.addEventListener('blur',()=>belCommitName(id,n));
+    n.addEventListener('blur',()=>setTimeout(()=>belCommitName(id,n),0));
     attachSuggest(n,'bel',()=>v.focus());
     v.addEventListener('blur',()=>setTimeout(()=>belCommitAmt(id,v),0));
     n.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();v.focus();}});
@@ -1472,12 +1488,33 @@ function belTotals(){
   $('belSumL').textContent='Total belanja '+MF[+S.belMonth.slice(5,7)-1]+' '+S.belMonth.slice(0,4);
   $('belSum').textContent=rp(tot);
 }
+function belPickDate(v){
+  if(!v)return;if(v>S.today){alert('Tanggal belum lewat.');v=S.today;}
+  S.belNew.date=v;S.belAct=Date.now();
+  const mk=v.slice(0,7);
+  if(mk!==S.belMonth){   // tampilkan bulan dari tanggal yang dipilih
+    S.belAnim=mk<S.belMonth?'slR':'slL';S.belMonth=mk;
+    if(+mk.slice(0,4)!==S.belYear){S.belYear=+mk.slice(0,4);renderTop();renderBel();loadBel(S.tok);}else renderBel();
+  }else{const d=$('bnDate');if(d)d.value=v;}
+  setTimeout(()=>{const n=$('bnName');if(n)n.focus();},50);
+}
+// 1 menit tanpa aktivitas → tanggal input kembali ke hari ini
+['pointerdown','keydown','input'].forEach(ev=>document.addEventListener(ev,()=>{if(S.page==='bel')S.belAct=Date.now();},true));
+setInterval(()=>{
+  if(S.page!=='bel'||!S.belNew.date||S.belNew.date===S.today)return;
+  if(Date.now()-(S.belAct||0)<60000)return;
+  const b=$('belBody');if(b&&b.contains(document.activeElement))return;
+  S.belNew.date=null;
+  if(S.belMonth!==S.today.slice(0,7)){S.belMonth=S.today.slice(0,7);if(S.belYear!==+S.today.slice(0,4)){S.belYear=+S.today.slice(0,4);renderTop();loadBel(S.tok);}}
+  renderBel();
+},5000);
 function belNewTog(k){S.belNew[k]=!S.belNew[k];const keep={n:$('bnName').value,a:$('bnAmt').value};renderBel();$('bnName').value=keep.n;$('bnAmt').value=keep.a;}
 function belAdd(){
   const name=$('bnName').value.trim(),el=$('bnAmt'),amt=parseAmount(el.value),date=$('bnDate').value||belNewDate();
   if(!name&&!amt){$('bnName').focus();return;}
   if(date>S.today){alert('Tanggal belum lewat.');return;}
-  S.belNew.date=date;
+  S.belNew.date=date;S.belAct=Date.now();
+  if(date.slice(0,7)!==S.belMonth){S.belMonth=date.slice(0,7);if(+date.slice(0,4)!==S.belYear){S.belYear=+date.slice(0,4);renderTop();loadBel(S.tok);}}
   enqueue(['upsertBelanja',[{id:uid(),branch:S.branch,date:date,name:name,amount:amt,f:fOf(el),bon:!!S.belNew.bon,done:!!S.belNew.done}]]);
   S.belNew.bon=false;S.belNew.done=false;
   renderBel();
