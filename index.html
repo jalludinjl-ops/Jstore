@@ -473,14 +473,14 @@ input,select{font:inherit;color:inherit}
   .rtab td.rt{padding-right:6px;font-size:12px}
   .btab tfoot td{font-size:12px;padding:9px 4px}.btab tfoot td:first-child{padding-left:8px}.btab tfoot td:last-child{padding-right:6px}
   .btab tfoot .sub{display:none}
-  .ptab{min-width:640px}.ptab .p1{width:120px}
+  .ptab{min-width:930px}.ptab .p1{width:120px}
   .ftabs button{font-size:13px;gap:5px}
 }
 
 /* ===== v7: data produk ===== */
 .psearch{display:flex;align-items:center;gap:8px;margin-top:10px;background:var(--soft);border-radius:12px;padding:0 12px;color:var(--ink3)}
 .psearch input{flex:1;min-width:0;border:0;outline:0;background:transparent;padding:10px 0;font-size:15px;color:var(--ink)}
-.ptab{min-width:680px}
+.ptab{min-width:1010px}
 .ptab .p1{width:150px}
 .ptab td.p1,.ptab th.p1h{position:sticky;left:0;z-index:3;background:var(--card);box-shadow:1px 0 0 var(--line)}
 .ptab th.p1h{z-index:7;background:var(--ink);box-shadow:none}
@@ -488,6 +488,12 @@ input,select{font:inherit;color:inherit}
 .ptab td.pf b{display:block;font-size:13px;color:var(--green)}
 .ptab td.pf small{font-size:11px;color:var(--green);opacity:.8}
 .ptab td.pf.neg b,.ptab td.pf.neg small{color:var(--red)}
+.ptab .pm{width:74px}
+.ptab td.pmg{text-align:right;padding-right:10px;font-size:13px}
+.ptab td.pmg b{font-weight:700}
+.ptab td.pmg.neg b{color:var(--red)}
+#calcTip{position:fixed;z-index:120;pointer-events:none;background:var(--ink);color:var(--onink);font-size:13px;font-weight:700;padding:5px 10px;border-radius:99px;box-shadow:0 4px 14px rgba(0,0,0,.2);opacity:0;transform:translateY(4px);transition:opacity .15s,transform .15s;white-space:nowrap}
+#calcTip.show{opacity:1;transform:none}
 .ptab tbody tr[data-id] td{background:var(--card)}
 .pfg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}
 .pfb{background:var(--soft);border-radius:12px;padding:10px 12px;min-width:0}
@@ -870,13 +876,28 @@ const short=n=>{const a=Math.abs(n||0),s=n<0?'-':'';if(a>=1e6)return s+(a/1e6).t
 const lblJ=n=>{const a=Math.abs(n||0),s=n<0?'-':'';if(a>=1e6)return s+(a/1e6).toLocaleString('id-ID',{maximumFractionDigits:1})+'jt';return s+Math.round(a/1e3)+'rb';};
 const pctTxt=v=>Number(v||0).toFixed(1).replace('.',',')+'%';
 // Angka bisa berupa hitungan: "1.000.000 + 200.000 - 50.000" -> 1.150.000
-const hasOp=v=>/\d\s*[+\-]\s*\d?/.test(String(v==null?'':v).replace(/^\s*-/,''));
+// operator: + −  ×(x * ×)  ÷(/ : ÷) · perkalian & pembagian dihitung dulu
+const OPRE=/[+\-×÷xX*\/:]/;
+const normOp=v=>String(v==null?'':v).replace(/[xX*]/g,'×').replace(/[\/:]/g,'÷');
+const hasOp=v=>/\d\s*[+\-×÷]\s*\d?/.test(normOp(v).replace(/^\s*-/,''));
+function evalExpr(v){
+  const t=normOp(v).replace(/\./g,'').replace(/[^\d,+\-×÷]/g,'').match(/\d+(?:,\d+)?|[+\-×÷]/g)||[];
+  const nums=[],ops=[];let want=true;
+  t.forEach(x=>{if(/\d/.test(x)){if(want){nums.push(Number(x.replace(',','.')));want=false;}}else if(!want){ops.push(x);want=true;}});
+  if(want&&ops.length)ops.pop();
+  // × ÷ dulu
+  const n2=[nums[0]||0],o2=[];
+  ops.forEach((o,i)=>{const b=nums[i+1];if(o==='×')n2[n2.length-1]*=b;else if(o==='÷'){if(b)n2[n2.length-1]/=b;}else{o2.push(o);n2.push(b);}});
+  let r=n2[0];o2.forEach((o,i)=>{r=o==='+'?r+n2[i+1]:r-n2[i+1];});
+  return Math.max(0,Math.round(r));
+}
 const parseAmount=v=>{
+  if(hasOp(v))return evalExpr(v);
   const s=String(v==null?'':v).replace(/[^\d+\-]/g,'');
   if(!/\d[+\-]/.test(s)){const d=s.replace(/\D/g,'');return d?Number(d):0;}
   let t=0;(s.match(/[+\-]?\d+/g)||[]).forEach(x=>t+=Number(x));return Math.max(0,t);
 };
-const fmtExpr=v=>String(v).replace(/[^\d+\-]/g,'').split(/([+\-])/).map(x=>x==='+'||x==='-'?' '+x+' ':(x?Number(x).toLocaleString('id-ID'):'')).join('');
+const fmtExpr=v=>normOp(v).replace(/[^\d,+\-×÷]/g,'').split(/([+\-×÷])/).map(x=>/^[+\-×÷]$/.test(x)?' '+x+' ':(x?(x.indexOf(',')>=0?Number(x.split(',')[0]||0).toLocaleString('id-ID')+','+x.split(',')[1]:Number(x).toLocaleString('id-ID')):'')).join('');
 const fmtIn=n=>n?Number(n).toLocaleString('id-ID'):'';
 const MN=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
 const MF=['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
@@ -905,13 +926,15 @@ function bindNum(el,onChange,noMini){
   el.addEventListener('input',e=>{
     let v=el.value;
     // hapus (backspace) setelah spasi tanda +/- : tandanya ikut terhapus
-    if(e&&/^delete/.test(e.inputType||'')&&/[+\-]$/.test(v.trim()===v?v:''))v=v.replace(/\s*[+\-]$/,'');
-    el.value=/[+\-]/.test(v.replace(/^\s*-/,''))?fmtExpr(v):fmtIn(parseAmount(v));
+    if(e&&/^delete/.test(e.inputType||'')&&/[+\-×÷]$/.test(v.trim()===v?v:''))v=v.replace(/\s*[+\-×÷]$/,'');
+    el.value=OPRE.test(v.replace(/^\s*-/,''))?fmtExpr(v):fmtIn(parseAmount(v));
+    calcTip(el);
     if(onChange)onChange();
   });
   // saat pindah kolom / Enter: hitungan langsung dijumlahkan
   el.addEventListener('blur',()=>{
-    el.dataset.f=hasOp(el.value)?fmtExpr(el.value).trim().replace(/\s*[+\-]\s*$/,''):'';
+    calcTip(null);
+    el.dataset.f=hasOp(el.value)?fmtExpr(el.value).trim().replace(/\s*[+\-×÷]\s*$/,''):'';
     el.value=fmtIn(parseAmount(el.value))||'0';if(onChange)onChange();
   });
   const box=noMini?null:el.closest('.fld,.trx');
@@ -923,18 +946,43 @@ function bindNum(el,onChange,noMini){
     box.appendChild(b);
   }
 }
+// hasil hitungan tampil kecil di atas kolom saat mengetik rumus
+function calcTip(el){
+  let t=$('calcTip');
+  if(!el||!hasOp(el.value)||!/\d\s*$/.test(el.value)){if(t)t.classList.remove('show');return;}
+  if(!t){t=document.createElement('div');t.id='calcTip';document.body.appendChild(t);}
+  t.textContent='= '+rp(parseAmount(el.value));t.classList.add('show');
+  const r=el.getBoundingClientRect(),w=t.offsetWidth,h=t.offsetHeight;
+  t.style.left=Math.max(6,Math.min(innerWidth-w-6,r.right-w))+'px';
+  t.style.top=(r.top>h+70?r.top-h-6:r.bottom+6)+'px';
+}
+window.addEventListener('scroll',()=>calcTip(null),{passive:true});
 function fOf(el){if(!el)return '';return hasOp(el.value)?fmtExpr(el.value).trim():(el.dataset.f||'');}
 function setNum(el,val,f){if(!el)return;el.value=f||fmtIn(val)||'0';el.dataset.f=f||'';}
 function addOp(id,op){addOpEl($(id),op);}
 function addOpEl(el,op){
   if(!el)return;
   if(document.activeElement!==el)el.focus();
-  let v=el.value.replace(/\s*[+\-]\s*$/,'');
+  let v=el.value.replace(/\s*[+\-×÷]\s*$/,'');
   if(!parseAmount(v)&&!hasOp(v))return;
   el.value=v+' '+op+' ';
   el.dispatchEvent(new Event('input'));
   try{el.setSelectionRange(el.value.length,el.value.length);}catch(e){}
 }
+
+// Enter di kolom mana pun: pindah ke kolom berikutnya, di kolom terakhir = OK (simpan)
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Enter'||e.defaultPrevented||e.isComposing)return;
+  const el=e.target;if(!el||el.tagName!=='INPUT')return;
+  if(/^(date|checkbox|radio|button|submit|file|month)$/.test(el.type)||el.classList.contains('sgi'))return;
+  e.preventDefault();
+  const scope=el.closest('.lcard,.dedit,.ledit,.card,.aibox,.belbox,main')||document.body;
+  const vis=x=>x.offsetParent!==null&&!x.disabled&&!x.readOnly&&!/^(date|checkbox|radio|button|file|month)$/.test(x.type)&&!x.classList.contains('sgi');
+  const list=[...scope.querySelectorAll('input')].filter(vis),i=list.indexOf(el);
+  if(i>=0&&i<list.length-1){const n=list[i+1];n.focus();try{n.select();}catch(_){}return;}
+  const ok=scope.querySelector('.pdSave,.btn2.dark,#saveBtn');
+  el.blur();if(ok)ok.click();
+});
 
 // =====================================================
 // STATE
@@ -1950,6 +1998,9 @@ function loadProd(force){
 // harga beli untuk rencana: kalau salah satu kosong, 1 kodi = 20 pcs
 const hk20=p=>p.bk||(p.bs?p.bs*20:0),hs20=p=>p.bs||(p.bk?Math.round(p.bk/20):0);
 const profitPct=(b,j)=>b>0&&j>0?(j-b)/b*100:null;
+const marginPct=(b,j)=>b>0&&j>0?(j-b)/j*100:null;   // margin = untung dibanding harga jual
+function marginCell(b,j,id){const m=marginPct(b,j);return '<td class="pmg'+(m!==null&&m<0?' neg':'')+'"'+(id?' id="'+id+'"':'')+'>'+(m===null?'<span class="cn">–</span>':'<b>'+pctTxt(m)+'</b>')+'</td>';}
+const per20=k=>k?Math.round(k/20):0;   // 1 kodi = 20 pcs
 function profitCell(b,j,id){
   if(!(b>0&&j>0))return '<td class="pf"'+(id?' id="'+id+'"':'')+'><span class="cn">–</span></td>';
   const d=j-b,p=d/b*100;
@@ -1965,11 +2016,11 @@ function renderProd(){
       '<div class="card bd"><div class="hd"><div><div style="font-size:17px;font-weight:800">Data produk</div><div class="sub" id="prodCnt"></div></div></div>'+
         '<label class="psearch">'+ic('search')+'<input id="prodQ" placeholder="Cari produk..." autocomplete="off" value="'+esc(S.prodQ||'')+'"></label></div>'+
       '<div class="belbox">'+
-        '<div class="btwrap pwrap" id="prodWrap"><table class="btab ptab"><colgroup><col class="p1"><col><col><col><col><col><col></colgroup>'+
-        '<thead><tr><th rowspan="2" class="p1h">Nama produk</th><th colspan="2" class="c">Harga beli</th><th colspan="2" class="c">Harga jual</th><th colspan="2" class="c">Profit</th></tr>'+
-        '<tr class="h2"><th class="r">Satuan</th><th class="r">Kodian</th><th class="r">Satuan</th><th class="r">Kodian</th><th class="r">Satuan</th><th class="r">Kodian</th></tr></thead>'+
+        '<div class="btwrap pwrap" id="prodWrap"><table class="btab ptab"><colgroup><col class="p1"><col><col><col><col><col><col><col class="pm"><col class="pm"></colgroup>'+
+        '<thead><tr><th rowspan="2" class="p1h">Nama produk</th><th colspan="2" class="c">Harga beli (modal)</th><th colspan="2" class="c">Harga jual</th><th colspan="2" class="c">Profit</th><th colspan="2" class="c">Margin</th></tr>'+
+        '<tr class="h2"><th class="r">Satuan</th><th class="r">Kodian</th><th class="r">Satuan</th><th class="r">Kodian</th><th class="r">Satuan</th><th class="r">Kodian</th><th class="r">Satuan</th><th class="r">Kodian</th></tr></thead>'+
         '<tbody id="prodBody"></tbody></table></div>'+
-        '<div class="sub" style="text-align:center;margin-top:10px">Ketik di baris paling atas untuk menambah · ketuk sel untuk mengubah · Enter untuk simpan · kosongkan nama untuk menghapus</div>'+
+        '<div class="sub" style="text-align:center;margin-top:10px">Isi harga beli kodian → harga beli satuan terisi otomatis (÷ 20), tetap bisa diubah · Profit dihitung dari harga beli, margin dari harga jual · kosongkan nama untuk menghapus</div>'+
       '</div>'+
       '<div class="card bd pfoot" id="prodFoot"></div>'+
     '</div>';
@@ -1985,15 +2036,15 @@ function renderProdBody(){
   const all=prodItems().slice().sort((a,b)=>a.name.localeCompare(b.name,'id',{sensitivity:'base'}));
   const q=String(S.prodQ||'').trim().toLowerCase();
   const list=q?all.filter(p=>p.name.toLowerCase().indexOf(q)>=0):all;
-  const num=(cls,v,id,ph)=>'<td><div class="bnum"><span>Rp</span><input class="bc '+cls+'"'+(id?' id="'+id+'"':'')+' inputmode="numeric" value="'+(v?fmtIn(v):'')+'" placeholder="'+(ph||'0')+'" data-o="'+(v||0)+'" enterkeyhint="next"></div></td>';
+  const num=(cls,v,id,ph)=>'<td><div class="bnum"><span>Rp</span><input class="bc '+cls+'"'+(id?' id="'+id+'"':'')+' inputmode="decimal" value="'+(v?fmtIn(v):'')+'" placeholder="'+(ph||'0')+'" data-o="'+(v||0)+'" enterkeyhint="next"></div></td>';
   let h='<tr class="bnew"><td class="p1"><input class="bc" id="pnName" placeholder="Nama produk baru..." maxlength="150" enterkeyhint="next"></td>'+
-    num('',0,'pnBs')+num('',0,'pnBk')+num('',0,'pnJs')+num('',0,'pnJk')+profitCell(0,0,'pnPs')+profitCell(0,0,'pnPk')+'</tr>';
-  if(!S.prod&&!getCached('getProduk',[]))h+='<tr><td colspan="7" class="bempty">Memuat data produk...</td></tr>';
-  else if(!all.length)h+='<tr><td colspan="7" class="bempty">Belum ada produk. Ketik nama produk di baris paling atas.</td></tr>';
-  else if(!list.length)h+='<tr><td colspan="7" class="bempty">Tidak ada produk dengan nama "'+esc(S.prodQ)+'".</td></tr>';
+    num('',0,'pnBs')+num('',0,'pnBk')+num('',0,'pnJs')+num('',0,'pnJk')+profitCell(0,0,'pnPs')+profitCell(0,0,'pnPk')+marginCell(0,0,'pnMs')+marginCell(0,0,'pnMk')+'</tr>';
+  if(!S.prod&&!getCached('getProduk',[]))h+='<tr><td colspan="9" class="bempty">Memuat data produk...</td></tr>';
+  else if(!all.length)h+='<tr><td colspan="9" class="bempty">Belum ada produk. Ketik nama produk di baris paling atas.</td></tr>';
+  else if(!list.length)h+='<tr><td colspan="9" class="bempty">Tidak ada produk dengan nama "'+esc(S.prodQ)+'".</td></tr>';
   list.forEach(p=>{
     h+='<tr data-id="'+p.id+'"'+(S.flash===p.id?' class="flash"':'')+'><td class="p1"><input class="bc pn" value="'+esc(p.name)+'" data-o="'+esc(p.name)+'" maxlength="150" enterkeyhint="next"></td>'+
-      num('pbs',p.bs)+num('pbk',p.bk)+num('pjs',p.js)+num('pjk',p.jk)+profitCell(p.bs,p.js)+profitCell(p.bk,p.jk)+'</tr>';
+      num('pbs',p.bs)+num('pbk',p.bk)+num('pjs',p.js)+num('pjk',p.jk)+profitCell(p.bs,p.js)+profitCell(p.bk,p.jk)+marginCell(p.bs,p.js)+marginCell(p.bk,p.jk)+'</tr>';
   });
   if(S.flash&&list.some(p=>p.id===S.flash))S.flash='';
   S.prodGen=(S.prodGen||0)+1;tb.innerHTML=h;
@@ -2001,19 +2052,29 @@ function renderProdBody(){
   const nn=$('pnName'),f=['pnBs','pnBk','pnJs','pnJk'].map($),gen=S.prodGen;
   const prev=()=>{if(gen!==S.prodGen)return;const v=f.map(e=>parseAmount(e.value));
     f[1].placeholder=v[0]?fmtIn(v[0]*20):'0';f[3].placeholder=v[2]?fmtIn(v[2]*20):'0';
-    $('pnPs').outerHTML=profitCell(v[0],v[2],'pnPs');$('pnPk').outerHTML=profitCell(v[1],v[3],'pnPk');};
-  f.forEach((e,i)=>{bindNum(e,prev,true);e.value='';
-    e.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault();if(i<3)f[i+1].focus();else prodAdd();}});});
-  nn.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();f[0].focus();}});
+    $('pnPs').outerHTML=profitCell(v[0],v[2],'pnPs');$('pnPk').outerHTML=profitCell(v[1],v[3],'pnPk');
+    $('pnMs').outerHTML=marginCell(v[0],v[2],'pnMs');$('pnMk').outerHTML=marginCell(v[1],v[3],'pnMk');};
+  const order=[f[1],f[0],f[2],f[3]];
+  f.forEach((e,i)=>{bindNum(e,()=>{
+      if(gen!==S.prodGen)return;
+      if(i===1&&!f[0].dataset.man){const k=parseAmount(f[1].value);f[0].value=k?fmtIn(per20(k)):'';}
+      prev();},true);e.value='';
+    if(i===0)e.addEventListener('input',()=>{e.dataset.man=parseAmount(e.value)?'1':'';});   // satuan diketik sendiri
+    e.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault();const j=order.indexOf(e);if(j<3){order[j+1].focus();try{order[j+1].select();}catch(_){}}else prodAdd();}});});
+  nn.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();f[1].focus();}});
   nn.addEventListener('blur',()=>{nn.value=cap1(nn.value);});
   // baris yang sudah ada: edit seperti Excel
   tb.querySelectorAll('tr[data-id]').forEach(tr=>{
     const id=tr.dataset.id,n=tr.querySelector('.pn'),c=['pbs','pbk','pjs','pjk'].map(k=>tr.querySelector('.'+k));
     n.addEventListener('blur',()=>setTimeout(()=>prodCommitName(id,n),0));
-    n.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();c[0].focus();}});
-    c.forEach((e,i)=>{bindNum(e,null,true);if(!+e.dataset.o)e.value='';
-      e.addEventListener('blur',()=>setTimeout(()=>prodCommitNum(id,['bs','bk','js','jk'][i],e),0));
-      e.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault();if(i<3)c[i+1].focus();else{let nx=tr.nextElementSibling;if(nx&&nx.dataset.id)nx.querySelector('.pn').focus();else e.blur();}}});});
+    const ord=[c[1],c[0],c[2],c[3]];
+    n.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();c[1].focus();}});
+    // harga beli satuan ikut kodian ÷ 20, selama satuan belum diubah sendiri
+    let autoS=false;
+    c[1].addEventListener('focus',()=>{const it=prodItems().find(x=>x.id===id);autoS=!!it&&(!it.bs||it.bs===per20(it.bk));});
+    c.forEach((e,i)=>{bindNum(e,i===1?()=>{if(autoS){const k=parseAmount(c[1].value);c[0].value=k?fmtIn(per20(k)):'';}}:null,true);if(!+e.dataset.o)e.value='';
+      e.addEventListener('blur',()=>setTimeout(()=>{prodCommitNum(id,['bs','bk','js','jk'][i],e);if(i===1&&autoS)prodCommitNum(id,'bs',c[0]);},0));
+      e.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault();const j=ord.indexOf(e);if(j<3){ord[j+1].focus();try{ord[j+1].select();}catch(_){}}else{let nx=tr.nextElementSibling;if(nx&&nx.dataset.id)nx.querySelector('.pn').focus();else e.blur();}}});});
   });
   renderProdFoot();
 }
@@ -2022,15 +2083,15 @@ function renderProdFoot(){
   if(cnt)cnt.textContent=all.length+' produk · urut A–Z';
   if(!ft)return;
   const st=(bk,jk)=>{const xs=all.filter(p=>p[bk]>0&&p[jk]>0);if(!xs.length)return null;
-    return {n:xs.length,pct:xs.reduce((s,p)=>s+(p[jk]-p[bk])/p[bk]*100,0)/xs.length,rp:xs.reduce((s,p)=>s+(p[jk]-p[bk]),0)/xs.length};};
+    return {n:xs.length,pct:xs.reduce((s,p)=>s+(p[jk]-p[bk])/p[bk]*100,0)/xs.length,mg:xs.reduce((s,p)=>s+(p[jk]-p[bk])/p[jk]*100,0)/xs.length,rp:xs.reduce((s,p)=>s+(p[jk]-p[bk]),0)/xs.length};};
   const s=st('bs','js'),k=st('bk','jk');
   const ranked=all.map(p=>({p:p,v:profitPct(p.bs,p.js),u:'satuan'})).map(o=>o.v===null?{p:o.p,v:profitPct(o.p.bk,o.p.jk),u:'kodian'}:o).filter(o=>o.v!==null).sort((a,b)=>b.v-a.v);
   const hi=ranked[0],lo=ranked.length>1?ranked[ranked.length-1]:null;
   const box=(l,big,sub,cls)=>'<div class="pfb'+(cls?' '+cls:'')+'"><small>'+l+'</small><b>'+big+'</b><span>'+sub+'</span></div>';
-  ft.innerHTML='<div class="hd"><b style="font-size:15px">Rata-rata keuntungan</b><span class="sub">'+all.length+' produk</span></div>'+
+  ft.innerHTML='<div class="hd"><b style="font-size:15px">Rata-rata keuntungan</b><span class="sub">'+all.length+' produk · persen besar = profit dari harga beli</span></div>'+
     '<div class="pfg">'+
-      box('Satuan',s?pctTxt(s.pct):'–',s?rp(s.rp)+' per pcs · '+s.n+' produk':'Belum ada harga satuan')+
-      box('Kodian',k?pctTxt(k.pct):'–',k?rp(k.rp)+' per kodi · '+k.n+' produk':'Belum ada harga kodian')+
+      box('Satuan',s?pctTxt(s.pct):'–',s?'Margin '+pctTxt(s.mg)+' · '+rp(s.rp)+' per pcs · '+s.n+' produk':'Belum ada harga satuan')+
+      box('Kodian',k?pctTxt(k.pct):'–',k?'Margin '+pctTxt(k.mg)+' · '+rp(k.rp)+' per kodi · '+k.n+' produk':'Belum ada harga kodian')+
       box(ic('trophy')+' Tertinggi',hi?esc(hi.p.name):'–',hi?pctTxt(hi.v)+' ('+hi.u+')':'',' tx')+
       box(ic('low')+' Terendah',lo?esc(lo.p.name):'–',lo?pctTxt(lo.v)+' ('+lo.u+')':'',' tx')+
     '</div>';
@@ -2059,7 +2120,8 @@ function prodCommitNum(id,k,el){
   el.dataset.o=a;const p={id:id};p[k]=a;enqueue(['upsertProduk',[p]]);
   // profit di baris ini langsung ikut berubah
   const tr=el.closest('tr'),it=prodItems().find(x=>x.id===id);
-  if(tr&&it){const tds=tr.querySelectorAll('td.pf');tds[0].outerHTML=profitCell(it.bs,it.js);tds[1].outerHTML=profitCell(it.bk,it.jk);}
+  if(tr&&it){const tds=tr.querySelectorAll('td.pf');tds[0].outerHTML=profitCell(it.bs,it.js);tds[1].outerHTML=profitCell(it.bk,it.jk);
+    const ms=tr.querySelectorAll('td.pmg');ms[0].outerHTML=marginCell(it.bs,it.js);ms[1].outerHTML=marginCell(it.bk,it.jk);}
 }
 
 // =====================================================
@@ -2116,7 +2178,7 @@ function renderRen(){
   const qty=(cls,v,id)=>'<td><input class="bc rq '+cls+'"'+(id?' id="'+id+'"':'')+' inputmode="decimal" value="'+fmtQ(v)+'" placeholder="0" data-o="'+(v||0)+'" enterkeyhint="next"></td>';
   let h='<tr class="bnew"><td><input class="bc" id="rnName" placeholder="Ketik nama barang..." maxlength="150" enterkeyhint="next"></td>'+
     qty('',0,'rnK')+qty('',0,'rnS')+
-    '<td><div class="bnum"><span>Rp</span><input class="bc" id="rnH" inputmode="numeric" placeholder="0" enterkeyhint="done"></div><div class="ru" id="rnU"></div></td>'+
+    '<td><div class="bnum"><span>Rp</span><input class="bc" id="rnH" inputmode="decimal" placeholder="0" enterkeyhint="done"></div><div class="ru" id="rnU"></div></td>'+
     '<td class="r rt" id="rnT">–</td></tr>';
   if(!renData())h+='<tr><td colspan="5" class="bempty">Memuat rencana...</td></tr>';
   else if(!items.length)h+='<tr><td colspan="5" class="bempty">Belum ada rencana untuk '+dateLong(d)+'.'+(others.length?'':'<br>Ketik nama barang di baris paling atas.')+'</td></tr>';
@@ -2124,7 +2186,7 @@ function renderRen(){
     const u=renUnit(it),both=it.k>0&&it.s>0;
     h+='<tr data-id="'+it.id+'"'+(S.flash===it.id?' class="flash"':'')+'><td><input class="bc rn" value="'+esc(it.name)+'" data-o="'+esc(it.name)+'" maxlength="150" enterkeyhint="next"></td>'+
       qty('rk',it.k)+qty('rs',it.s)+
-      '<td><div class="bnum"><span>Rp</span><input class="bc rh" inputmode="numeric" value="'+fmtIn(u==='k'?renHK(it):renHS(it))+'" placeholder="0" data-o="'+(u==='k'?renHK(it):renHS(it))+'" enterkeyhint="next"></div>'+
+      '<td><div class="bnum"><span>Rp</span><input class="bc rh" inputmode="decimal" value="'+fmtIn(u==='k'?renHK(it):renHS(it))+'" placeholder="0" data-o="'+(u==='k'?renHK(it):renHS(it))+'" enterkeyhint="next"></div>'+
       '<div class="ru">per '+(u==='k'?'kodi':'pcs')+(both?' · pcs '+rp(renHS(it)):'')+'</div></td>'+
       '<td class="r rt">'+rp(renTot(it))+'</td></tr>';
   });
