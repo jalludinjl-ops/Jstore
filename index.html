@@ -673,7 +673,8 @@ function load(a,args,cb){
   return callApi(a,args).then(d=>{setNet(true);setCached(a,args,d);showStatus('');cb(withPending(a,clone(d)),false);return d;})
     .catch(e=>{
       if(e.network){setNet(false);if(c)showStatus('');return;}
-      if(e.message!=='Masukkan kunci akses dulu.')showStatus('⚠️ '+e.message);
+      if(/Aksi tidak dikenal/.test(e.message))showStatus('⚠️ Apps Script di server masih versi lama (belum ada fitur '+a+'). Deploy Code_v8: Manage deployments → Edit → Version: New version → Deploy.');
+      else if(e.message!=='Masukkan kunci akses dulu.')showStatus('⚠️ '+e.message);
     });
 }
 
@@ -714,11 +715,13 @@ function flush(){
   const ops=OB.slice(0,40);
   callApi('batch',[ops]).then(res=>{
     setNet(true);
-    const sent={};let bad=[];
-    (res||[]).forEach(r=>{sent[r.id]=1;if(!r.ok)bad.push(r.error);});
+    const sent={};let bad=[],old=0;
+    // "Aksi tidak dikenal" = Apps Script belum diperbarui: data TIDAK dibuang, tetap di antrean
+    (res||[]).forEach(r=>{if(!r.ok&&/Aksi tidak dikenal/.test(r.error||'')){old++;return;}sent[r.id]=1;if(!r.ok)bad.push(r.error);});
     OB=OB.filter(o=>!sent[o.id]);saveOB();
-    if(bad.length)showStatus('⚠️ Sebagian data ditolak server: '+bad[0]);
     OB_BUSY=false;syncBadge();
+    if(old){showStatus('⚠️ Apps Script di server masih versi lama. '+old+' data disimpan dulu di perangkat ini dan akan terkirim otomatis setelah Code_v8 di-deploy (Manage deployments → New version).');clearTimeout(OB_RETRY);OB_RETRY=setTimeout(flush,30000);return;}
+    if(bad.length)showStatus('⚠️ Sebagian data ditolak server: '+bad[0]);
     if(OB.length)flush();else refresh();   // semua terkirim → ambil data terbaru
   }).catch(e=>{
     OB_BUSY=false;
