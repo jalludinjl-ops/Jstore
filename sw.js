@@ -2,7 +2,7 @@
 // File aplikasi disimpan di perangkat supaya bisa dibuka saat offline.
 // Network-first (maks 4 detik): saat online, versi terbaru dari GitHub langsung terpakai.
 // Permintaan ke Apps Script (script.google.com) tidak disentuh.
-const CACHE = 'jstore-app-v6';
+const CACHE = 'jstore-app-v7';
 const SHELL = ['./', './index.html'];
 
 self.addEventListener('install', e => {
