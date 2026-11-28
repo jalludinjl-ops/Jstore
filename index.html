@@ -1097,7 +1097,7 @@ function refresh(){
   }else if(S.page==='bel'){
     if(S.belTab==='renc'){loadRen(tok);loadProd();}else loadBel(tok);
   }else if(S.dbTab==='produk'){
-    renderDbStatic();renderProd();loadProd(true);
+    renderDbStatic();if($('prodBody'))renderProdSafe();else renderProd();loadProd(true);
   }else{
     renderDbStatic();
     load('getMonth',[S.branch,S.month],d=>{if(tok===S.tok){S.dbMonth=d;renderDbTable();}});
@@ -2032,6 +2032,8 @@ function renderProd(){
 }
 function renderProdBody(){
   const tb=$('prodBody');if(!tb)return;
+  // kursor di baris input baru tetap di tempatnya walau tabel digambar ulang
+  const ae=document.activeElement,keep=ae&&/^pn(Name|Bs|Bk|Js|Jk)$/.test(ae.id)&&tb.contains(ae)?{id:ae.id,v:ae.value}:null;
   S.prodPending=false;
   const all=prodItems().slice().sort((a,b)=>a.name.localeCompare(b.name,'id',{sensitivity:'base'}));
   const q=String(S.prodQ||'').trim().toLowerCase();
@@ -2076,6 +2078,7 @@ function renderProdBody(){
       e.addEventListener('blur',()=>setTimeout(()=>{prodCommitNum(id,['bs','bk','js','jk'][i],e);if(i===1&&autoS)prodCommitNum(id,'bs',c[0]);},0));
       e.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault();const j=ord.indexOf(e);if(j<3){ord[j+1].focus();try{ord[j+1].select();}catch(_){}}else{let nx=tr.nextElementSibling;if(nx&&nx.dataset.id)nx.querySelector('.pn').focus();else e.blur();}}});});
   });
+  if(keep){const k=$(keep.id);if(k){k.value=keep.v;k.focus();try{k.setSelectionRange(k.value.length,k.value.length);}catch(_){}}}
   renderProdFoot();
 }
 function renderProdFoot(){
